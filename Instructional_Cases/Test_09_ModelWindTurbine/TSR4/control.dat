@@ -1,0 +1,136 @@
+-delete 0
+-binary 0
+-dt 0.001  
+-flux 0.36 
+-kk_periodic 0
+-ii_periodic 1
+-imm 0
+-wallfunction 0
+-tio 200 
+-ren 429407
+-inv 0  
+-les 2
+-max_cs 0.1
+-rans 0 
+-twoD 0
+-thin 1
+
+-imp 4
+-inlet 100
+-perturb 0
+-twoD 0
+-body 1
+-rbody 1
+
+-fsi 0
+-mframe 0
+-rframe 0
+-rfsi 0
+-rfsi_noIBsearch 0
+-rotdir 2
+-angvel -9.28
+-str 0
+-rs_fsi 0
+-red_vel 2.
+-damp    0.0
+-mu_s    0.25
+-x_c     0.0
+-y_c     0.0
+-z_c     0.0
+-Max_xbc 0.078
+-Min_xbc 0.022
+-radi 40
+
+-x_r 0.0
+-y_r 0.0
+-z_r 0.0
+
+
+	
+-poisson 1
+-poisson_it 11 
+-poisson_tol 1.e-12
+-amg_agg 0
+
+#-phase_averaging 200
+!-averaging 3
+-ti_lastsave 0
+!-rstart 0
+-totalsteps 6000
+
+#-roughness 0.0009
+
+#-dpdz -0.0015       	
+
+-imp_tol 1.0e-6	
+
+-dh1_wm 0.00005
+
+-IB_wm 0
+
+-imin_wm 0
+-imax_wm 0
+-jmin_wm 3
+-jmax_wm 0 
+
+#-powerlawwallmodel 1
+
+-rotor_modeled 6
+-num_blade 3
+-num_foiltype 2
+-turbine 1
+-reflength_wt 1.5
+-r_nacelle 0.0
+-refvel_wt 8.0
+-refvel_cfd 1.0
+-loc_refvel 1.0
+-rotatewt 1
+-deltafunc 0
+-halfwidth_dfunc 2.0
+
+#-save_inflow 1
+-save_inflow_period 500
+-save_inflow_minus 0
+-recycle 10000
+-path_inflow "./inflow0031"
+
+#-chact_leng 1.0
+ 
+-IB_delta 0
+-NumberOfIBDelta 7
+-NumIBPerLoc 7
+-reflength_IBDelta 1
+
+# ---------
+# turbine control
+
+-turbinetorquecontrol 0
+-fixturbineangvel 1
+-FixTipSpeedRatio 0
+-rstart_turbinerotation 0
+
+-fixturbinegeneratortorque 0
+
+-Shen_AL 1
+-Shen1_AL 0
+#-a_shen 
+#-b_shen 12
+#-c_shen
+#-Prandtl_AL 0
+#-g1_AL 0.2
+#-correction3D_CH 0
+#-c1_CH 1.8
+#-correction3D_CL 0
+#-correction_ALShen1 1.60
+
+-c0_CL 1
+-xyz 0 
+
+-smoothforce_AL 0
+
+-scale_velocity 1 
+
+-radialforce_AL 0
+
+
+-refangle_AL 10

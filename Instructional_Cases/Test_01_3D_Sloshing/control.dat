@@ -1,0 +1,94 @@
+-dt 0.001
+-tio 100
+!-rstart 100
+!-rs_fsi 5000
+!-delete 1
+-totalsteps 10000
+-xyz 1
+!-averaging 0
+
+-ren 6666.6666
+-inv 1
+-laplacian 1
+-les 0
+-max_cs 0.2
+-rans 0
+-second_order 1
+-binary 0
+
+-levelset 1
+-rho0 1000
+-rho1 1
+-mu0 1.e-3
+-mu1 1.8e-5
+-sloshing 2
+-stension 0
+-gy -9.8
+!-gz -9.8
+-level_in 2
+-dthick  0.03
+-level_in_height 1.
+!-inlet_y 0.
+!-outlet_y 0.
+!-fix_outlet 0
+!-fix_inlet 0
+-fix_level 0
+-levelset_it 15
+-levelset_tau 0.05
+-subdt_levelset 4
+-air_flow_levelset 0
+
+-imp 4
+-poisson 1
+-poisson_it 15
+-inlet 0
+-init1 0
+-blk 0
+!-flux 0
+!-cfl .1 
+!-vnn .1
+
+-freesurface_wallmodel 0
+-wave_average_k 0
+!-wave_k_ave 115
+!-wave_i_ave 31
+!-wave_ti_start 1
+!-wave_ti_startave 5000
+!-wave_skip 1
+!-wind_skip 30
+!-wind_start_read 0
+!-wave_start_read 0
+!-wind_recicle 300
+!-wave_recicle 5000
+!-wave_angle_single 0.
+!-wave_K_single 5.23598776
+!-wave_depth 2.0
+!-wave_a_single 0.01;
+-wave_momentum_source 0
+-wave_sponge_layer 0
+!-wave_songe_xs 3
+!-wave_songe_x01 -12.
+!-wave_songe_x02 9.
+!-wave_songe_ys 2.
+!-wave_songe_y01 -4.25.
+!-wave_songe_y02 2.25.
+
+-imm 0
+!-body 1
+-wallfunction 0
+!-forced_motion 0
+!-fsi 0
+!-mrfsi 0
+!-rotdir 1
+!-rfsi 0
+!-dgf_ay 1
+!-str 0
+!-red_vel 0.897597901025655210 !ured 7
+!-damp    0.0
+!-mu_s    0.25
+!-x_c     -1.5
+!-y_c     0.
+!-z_c     -0.08
+
+
+

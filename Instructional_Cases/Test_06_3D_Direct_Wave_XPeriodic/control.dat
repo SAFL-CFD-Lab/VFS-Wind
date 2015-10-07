@@ -1,0 +1,185 @@
+-dt 0.002
+-tio 1000
+!-rstart 540000
+!-rs_fsi 5000
+-delete 0
+-totalsteps 10000
+!-averaging 0
+
+-ren 66666.6666
+-inv 0
+-laplacian 0
+-les 0
+-max_cs 0.2
+-rans 0
+-second_order 1
+-binary 0
+-xyz 1
+-ii_periodic 1
+!-kk_periodic 1
+
+-levelset 1
+-levelset_solve2 0
+-rho0 1000.
+-rho1 1.2
+-mu0 1.e-3
+-mu1 1.8e-5
+-sloshing 0
+-stension 0
+-gy -9.81
+-gz 0
+-level_in 2
+-dthick  0.04
+-level_in_height 0.0
+-inlet_y 0.
+-outlet_y 0.
+!-fix_outlet 0
+!-fix_inlet 0
+-fix_level 0
+-levelset_it 5
+-levelset_tau 0.05
+!-subdt_levelset 4
+-air_flow_levelset 0
+-air_flow_levelset_periodic 0
+-levelset_weno 0
+-export_FS_elev_center 0
+-export_FS_elev 1
+
+-Couette_flow_case 0
+
+-imp 4
+-poisson 1
+-poisson_it 15
+-poisson_tol 1.e-8
+-inlet 0
+-perturb 0
+!-dpdz .0000000001
+-flux 0
+-imp_tol 1.e-5
+!-cfl .1 
+!-vnn .1
+
+-freesurface_wallmodel 0
+!-wave_average_k 0
+!-wave_k_ave 115
+!-wave_i_ave 31
+!-wave_ti_start 0
+!-wave_ti_startave 5000
+-wave_skip 1
+-wind_skip 1 !30
+-wind_start_read 0
+-wave_start_read 0
+-wind_recicle 5000
+-wave_recicle 5000
+-wave_angle_single 0.52359877559829887307710723054658 !30deg
+-wave_K_single 5.23598775598
+-wave_depth 2.0
+-wave_a_single 0.01
+-wave_momentum_source 2
+-wave_sponge_layer 1
+-wave_sponge_zs 1.2
+-wave_sponge_z01 -12.0
+-wave_sponge_z02 10.6
+-wave_sponge_xs 1.2.
+-wave_sponge_x01 0.
+-wave_sponge_x02 0.
+-wave_wind_reflength 1.
+-wave_wind_refvel 1.
+-wave_wind_yshift 0
+-path_wind /mnt/lustre2/fsotiropoulos/cald0075/01_levelset/10_Floating_Turbine_Case/00_FF_u6/01_u6_FF_data/01_wind_data
+-path_wave /mnt/lustre2/fsotiropoulos/cald0075/01_levelset/10_Floating_Turbine_Case/00_FF_u6/01_u6_FF_data/00_wave_data
+
+-imm 0
+-body 0
+-wallfunction 0
+-forced_motion 0
+-fall_cyll_case 0
+-fsi 0
+-fsi_6dof 0
+-mrfsi 0
+-rotdir 1
+-rfsi 0
+-dgf_z 1
+-dgf_y 1
+-dgf_x 1
+-dgf_ax 1
+-dgf_ay 1
+-dgf_az 1
+-str 0
+-red_vel 0.897597901025655210 !ured 7
+-damp    0.0
+-mu_s    0.25
+-x_c     0.
+-y_c     0.
+-z_c     900.
+-x_r     0.
+-y_r     -18.84
+-z_r     900.
+-body_mass 3.7e7
+-body_inertia_x 3.64e10
+-body_inertia_y 6.39e10
+-body_inertia_z 3.64e10
+-body_alpha_lin_x 0.
+-body_alpha_lin_y 0.
+-body_alpha_lin_z 0.
+-body_alpha_rot_x 0.
+-body_alpha_rot_y 0.
+-body_alpha_rot_z 0.
+-body_beta_lin_x  1.e6;
+-body_beta_lin_y  0.
+-body_beta_lin_z  1.e6;
+-body_beta_rot_x  0.
+-body_beta_rot_y  0.
+-body_beta_rot_z  0.
+-angle_x0 0.
+-angle_y0 0.
+-anble_z0 0.
+-floating_turbine_case 0
+
+
+!-save_inflow 0
+!-save_inflow_period 1000
+!-save_inflow_minus 0
+!-recycle 20000
+!-path_inflow "/mnt/lustre2/fsotiropoulos/cald0075/02_Actuator_models/03_OscilatingTurbine_SAFL_WT/00_ChannelFlow/02_inflow_G2"
+
+!-rotor_modeled 0
+!-num_blade 3
+!-num_foiltype 1
+!-turbine 1
+!-reflength_wt 1.
+!-r_nacelle 0.0
+!-refvel_wt 1.0
+!-refvel_cfd 1.0
+!-loc_refvel 1.0
+!-rotatewt 1
+!-deltafunc 0
+!-halfwidth_dfunc 2.0
+
+!-turbine_6dof_fsi_motion 0
+!-turbine_prescrived_motion 0
+!-turbine_prescrived_motion_heave 0
+!-turbine_prescrived_motion_pitch 0
+
+!# turbine control
+!-turbinetorquecontrol 0
+!-fixturbineangvel 1
+!-FixTipSpeedRatio 0
+!-rstart_turbinerotation 0
+!-fixturbinegeneratortorque 0
+!-Shen_AL 1
+!-Shen1_AL 0
+!#-a_shen 
+!#-b_shen 12
+!#-c_shen
+!#-Prandtl_AL 0
+!#-g1_AL 0.2
+!#-correction3D_CH 0
+!#-c1_CH 1.8
+!#-correction3D_CL 0
+!#-correction_ALShen1 1.60
+!-c0_CL 1
+!-smoothforce_AL 0
+!-scale_velocity 1 
+!-radialforce_AL 0
+!-refangle_AL 10
