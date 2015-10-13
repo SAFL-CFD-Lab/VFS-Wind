@@ -23,9 +23,9 @@
 -mu1 1.8e-5
 -sloshing 0
 -stension 0
-!-gy -9.8
--gz -9.8
--level_in 1
+-gy -9.81
+!-gz -9.8
+-level_in 2
 -dthick  0.02
 -level_in_height 0.0
 -inlet_y 0.
@@ -66,9 +66,9 @@
 -wave_a_single 0.01;
 -wave_momentum_source 2
 -wave_sponge_layer 1
--wave_sponge_xs 3
--wave_sponge_x01 -12.
--wave_sponge_x02 9.
+-wave_sponge_zs 3
+-wave_sponge_z01 -12.
+-wave_sponge_z02 9.
 !-wave_sponge_ys 2.
 !-wave_sponge_y01 -4.25.
 !-wave_sponge_y02 2.25.
