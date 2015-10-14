@@ -1130,7 +1130,7 @@ void write_data(UserCtx *user)
 			lvol += rho[k][j][i] / aj[k][j][i];
 			if ( i==ci && k==ck) {
 				if( level[k][j][i]>=0 && level[k][j+1][i]<0 ) {	// water surface is above my cell center
-					if(sloshing || level_in==1){
+					if(level_in==1){
 						lz_sloshing = cent[k][j][i].z + level[k][j][i];					
 					}
 					else if(level_in==2) {
@@ -1231,10 +1231,10 @@ void write_data(UserCtx *user)
 			else if(sloshing==2) {
 			  i=ci;k=ck;j=5;
 				x=10.;
-				y=10.;
-				double L = 20., d=1., Beta=0.25, g=fabs(gravity_z), a=0.1; // L = width of the 3D tank
-				printf("x=%f, y=%f\n", x, y );
-				double eta0 = a * exp ( -Beta * ( pow(x-L/2, 2) + pow(y-L/2, 2) ) );
+				double zz=10.;
+				double L = 20., d=1., Beta=0.25, g=fabs(gravity_y), a=0.1; // L = width of the 3D tank
+				printf("x=%f, z=%f\n", x, zz );
+				double eta0 = a * exp ( -Beta * ( pow(x-L/2, 2) + pow(zz-L/2, 2) ) );
 				std::complex<double> I(0,1);
 				std::complex<double> one(1,0);
 				std::complex<double> val(0,0);
@@ -1252,7 +1252,7 @@ void write_data(UserCtx *user)
 					Integral *= ERF ( (Beta*L*L - n*M_PI*I) * pow(2*sqrt(Beta)*L, -1) ) + ERF ( (Beta*L*L + n*M_PI*I) * pow(2*sqrt(Beta)*L, -1) );
 		
 					double eta_mn = (1./(L*L)) * coeff_m * coeff_n * Integral.real();
-					val += eta_mn * exp ( -I * omega_mn * _time ) * cos (n * M_PI / L * x) * cos (m * M_PI / L * y);
+					val += eta_mn * exp ( -I * omega_mn * _time ) * cos (n * M_PI / L * x) * cos (m * M_PI / L * zz);
 				}
 				z_sloshing_exact = val.real();
 			}			
@@ -2196,19 +2196,6 @@ int main(int argc, char **argv)
 			PetscPrintf(PETSC_COMM_WORLD, "rotor model pre-processing!\n");
 			Pre_process(&(user[0]), wtm, NumberOfTurbines); 
 		}
-		if (rotor_model == 2) {
-			double reflength = reflength_wt;
-			char fname[80];
-			sprintf(fname,"acl2data000");
-			for (i=0;i<NumberOfTurbines;i++) disk_read_ucd(&wtm[i], i, &fsi_wt[i], 0, fname, reflength);
-			PetscPrintf(PETSC_COMM_WORLD, "rotor model pre-processing!\n");
-			Pre_process(&(user[0]), wtm, NumberOfTurbines); 
-			sprintf(fname,"Urefdata000");
-			for (i=0;i<NumberOfTurbines;i++) disk_read_ucd(&ibm_ACD[i], i, &fsi_wt[i], 1, fname, reflength);
-			PetscPrintf(PETSC_COMM_WORLD, "Uref disk pre-processing!\n");
-			Pre_process(&(user[0]), ibm_ACD, NumberOfTurbines);
-			airfoil_ACL(acl, wtm,  fsi_wt);
-		}
 		if (rotor_model == 3) {
 			double reflength = reflength_wt;
 			for (i=0;i<NumberOfTurbines;i++) ACL_read_ucd(&wtm[i], i, &fsi_wt[i], reflength);
@@ -2232,29 +2219,6 @@ int main(int argc, char **argv)
 			for (i=0;i<NumberOfTurbines;i++) disk_read_ucd(&ibm_ACD[i], i, &fsi_wt[i], 1, fname, reflength);
 			PetscPrintf(PETSC_COMM_WORLD, "Uref disk pre-processing!\n");
 			Pre_process(&(user[0]), ibm_ACD, NumberOfTurbines);
-		}
-		if (rotor_model == 5) {
-			double reflength = reflength_wt;
-			//ACD_read(&wtm[i], i, &fsi_wt[i], 0);
-			char fname[80];
-			sprintf(fname,"acsdata000");
-			//for (i=0;i<NumberOfTurbines;i++) ACL_read_ucd(&wtm[i], i, &fsi_wt[i]);
-			for (i=0;i<NumberOfTurbines;i++) surface_read_xpatch(&wtm[i], i, &fsi_wt[i], fname, reflength);
-			//for (i=0;i<NumberOfTurbines;i++) disk_read_ucd(&wtm[i], i, &fsi_wt[i], 0, fname);
-			PetscPrintf(PETSC_COMM_WORLD, "acl2 pre-processing!\n");
-			Pre_process(&(user[0]), wtm, NumberOfTurbines);  
-			//disk_read_ucd(&wtm[i], i, &fsi_wt[i], 0, fname);
-			sprintf(fname,"Urefdata000");
-			for (i=0;i<NumberOfTurbines;i++) disk_read_ucd(&ibm_ACD[i], i, &fsi_wt[i], 1, fname, reflength);
-			PetscPrintf(PETSC_COMM_WORLD, "Uref disk pre-processing!\n");
-			Pre_process(&(user[0]), ibm_ACD, NumberOfTurbines);
-			PetscPrintf(PETSC_COMM_WORLD, "Read uref line!\n");
-			for (i=0;i<NumberOfTurbines;i++) ACL_read_ucd(&ibm_acl2ref[i], i, &fsi_acl2ref[i], reflength);  // 20140807
-			PetscPrintf(PETSC_COMM_WORLD, "Uref line pre-processing!\n");
-			Pre_process(&(user[0]), ibm_acl2ref, NumberOfTurbines); // 20140807
-			calc_s2l(wtm, ibm_acl2ref, fsi_wt, fsi_acl2ref, NumberOfTurbines);
-			airfoil_ACL(acl, wtm,  fsi_wt);
-			airfoil_ACL(acl, ibm_acl2ref,  fsi_acl2ref);
 		}
 		if (rotor_model == 6) {
 			double reflength = reflength_wt;
@@ -2360,100 +2324,6 @@ int main(int argc, char **argv)
 				//Elmt_Move_FSI_ROT(&fsi[ibi], &ibm[ibi], user[bi].dt, ibi);
 			}
 		}
-  }
-	if (nacelle_model) {
-		PetscReal cl = 1.;
-		PetscOptionsGetReal(PETSC_NULL, "-chact_leng", &cl, PETSC_NULL);
-		if (!my_rank) {
-			FILE *fd;
-			char str[256];
-			sprintf(str, "%s/Nacelle.inp", path);
-			fd = fopen(str, "r");
-			if(!fd) PetscPrintf(PETSC_COMM_WORLD, "cannot open %s !\n", str),exit(0);
-			char string[256];
-			fgets(string, 256, fd);
-			for (ibi=0;ibi<NumberOfNacelle;ibi++) {
-				fscanf(fd, "%le %le %le %le %le %le %le %d %le %le %le %le %le %le %le", &(fsi_nacelle[ibi].nx_tb), &(fsi_nacelle[ibi].ny_tb), &(fsi_nacelle[ibi].nz_tb), &(fsi_nacelle[ibi].x_c), &(fsi_nacelle[ibi].y_c), &(fsi_nacelle[ibi].z_c), &(fsi_nacelle[ibi].angvel_axis), &(fsi_nacelle[ibi].rotate_alongaxis), &(ibm_nacelle[ibi].axialforcecoefficient), &(ibm_nacelle[ibi].tangentialforcecoefficient), &(ibm_nacelle[ibi].axialprojectedarea), &(ibm_nacelle[ibi].tangentialprojectedarea), &(ibm_nacelle[ibi].pressure_factor), &(ibm_nacelle[ibi].friction_factor), &(ibm_nacelle[ibi].dh));
-				double rr=sqrt(pow(fsi_nacelle[ibi].nx_tb,2)+pow(fsi_nacelle[ibi].ny_tb,2)+pow(fsi_nacelle[ibi].nz_tb,2));
-				fsi_nacelle[ibi].nx_tb=fsi_nacelle[ibi].nx_tb/rr; 
-				fsi_nacelle[ibi].ny_tb=fsi_nacelle[ibi].ny_tb/rr; 
-				fsi_nacelle[ibi].nz_tb=fsi_nacelle[ibi].nz_tb/rr;
-				MPI_Bcast(&(fsi_nacelle[ibi].nx_tb), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].ny_tb), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].nz_tb), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				PetscPrintf(PETSC_COMM_WORLD, "The directions of nacelle %f %f %f \n", (fsi_nacelle[ibi].nx_tb), (fsi_nacelle[ibi].ny_tb), (fsi_nacelle[ibi].nz_tb));
-				fsi_nacelle[ibi].x_c=fsi_nacelle[ibi].x_c/cl;
-				fsi_nacelle[ibi].y_c=fsi_nacelle[ibi].y_c/cl;
-				fsi_nacelle[ibi].z_c=fsi_nacelle[ibi].z_c/cl;
-				MPI_Bcast(&(fsi_nacelle[ibi].x_c), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].y_c), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].z_c), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].angvel_axis), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].rotate_alongaxis), 1, MPI_INT, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].axialforcecoefficient), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].tangentialforcecoefficient), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].axialprojectedarea), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].tangentialprojectedarea), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].pressure_factor), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].friction_factor), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].dh), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				PetscPrintf(PETSC_COMM_WORLD, "The Locations for %d th  nacelle %f %f %f \n", ibi, (fsi_nacelle[ibi].x_c), (fsi_nacelle[ibi].y_c),
-				(fsi_nacelle[ibi].z_c));
-				PetscPrintf(PETSC_COMM_WORLD, "The angular velocity for %d th nacelle body %f \n", ibi, (fsi_nacelle[ibi].angvel_axis));
-				PetscPrintf(PETSC_COMM_WORLD, "Rotate the nacelle along the axis? %d \n",(fsi_nacelle[ibi].rotate_alongaxis) );
-				PetscPrintf(PETSC_COMM_WORLD, "The axial force coefficient of %d th nacelle body %f \n", ibi, (ibm_nacelle[ibi].axialforcecoefficient));
-				PetscPrintf(PETSC_COMM_WORLD, "The tangential force coefficientt of %d th nacelle body %f \n", ibi, (ibm_nacelle[ibi].tangentialforcecoefficient));
-				PetscPrintf(PETSC_COMM_WORLD, "The axial projected area of %d th nacelle body %f \n", ibi, (ibm_nacelle[ibi].axialprojectedarea));
-				PetscPrintf(PETSC_COMM_WORLD, "The tangential projected area of %d th nacelle body %f \n", ibi, (ibm_nacelle[ibi].tangentialprojectedarea));
-				PetscPrintf(PETSC_COMM_WORLD, "The pressure factor of %d th nacelle %f \n", ibi, (ibm_nacelle[ibi].pressure_factor));
-				PetscPrintf(PETSC_COMM_WORLD, "The friction factor of %d th nacelle %f \n", ibi, (ibm_nacelle[ibi].friction_factor));
-				PetscPrintf(PETSC_COMM_WORLD, "The wall-normal thickness of %d th nacelle mesh %f \n", ibi, (ibm_nacelle[ibi].dh));
-			}
-			for (ibi=0;ibi<NumberOfNacelle;ibi++) {
-				fsi_nacelle[ibi].x_c0=fsi_nacelle[ibi].x_c;
-				fsi_nacelle[ibi].y_c0=fsi_nacelle[ibi].y_c;
-				fsi_nacelle[ibi].z_c0=fsi_nacelle[ibi].z_c;
-			}
-			fclose(fd);
-		}
-		else {
-			for (ibi=0;ibi<NumberOfNacelle;ibi++) {
-				MPI_Bcast(&(fsi_nacelle[ibi].nx_tb), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].ny_tb), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].nz_tb), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].x_c), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].y_c), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].z_c), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].angvel_axis), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(fsi_nacelle[ibi].rotate_alongaxis), 1, MPI_INT, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].axialforcecoefficient), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].tangentialforcecoefficient), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].axialprojectedarea), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].tangentialprojectedarea), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].pressure_factor), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].friction_factor), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-				MPI_Bcast(&(ibm_nacelle[ibi].dh), 1, MPIU_REAL, 0, PETSC_COMM_WORLD);
-			}
-			for (ibi=0;ibi<NumberOfNacelle;ibi++) {
-				fsi_nacelle[ibi].x_c0=fsi_nacelle[ibi].x_c;
-				fsi_nacelle[ibi].y_c0=fsi_nacelle[ibi].y_c;
-				fsi_nacelle[ibi].z_c0=fsi_nacelle[ibi].z_c;
-			}
-		}
-   	PetscPrintf(PETSC_COMM_WORLD, "nacells read  11!\n");
-		double reflength = reflength_nacelle;
-		int ipt;
-		int NumLoc=(int)NumberOfNacelle/(int)NumNacellePerLoc;
-		for (ibi=0;ibi<NumLoc;ibi++) 
-		for (ipt=0;ipt<(int)NumNacellePerLoc;ipt++) {
-			int iname=ibi*(int)NumNacellePerLoc+ipt; 
-			char fname[80];
-			sprintf(fname,"nacelle%3.3d", ipt);
-			disk_read_ucd(&ibm_nacelle[iname], iname, &fsi_nacelle[iname], 0, fname, reflength);	
-		}
-		Pre_process(&(user[0]), ibm_nacelle, NumberOfNacelle); // xyang 12-13-2010
-		ti = 0;
-		if (rstart_flg) ti = tistart;
   }
 
   level = usermg.mglevels-1;

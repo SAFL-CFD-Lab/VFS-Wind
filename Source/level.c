@@ -516,11 +516,11 @@ void Levelset_Function_IC(UserCtx *user)
 			}
 			if(sloshing==2) { // 2d sloshing
 				double L = 20., d=1., Beta=0.25, a=0.1; // L = width of the 3D tank
-				double eta0 = a * exp ( -Beta * ( pow(x-L/2, 2) + pow(y-L/2, 2) ) );
-				level[k][j][i] = eta0 + d - z;
+				double eta0 = a * exp ( -Beta * ( pow(x-L/2, 2) + pow(z-L/2, 2) ) );
+				level[k][j][i] = eta0 + d - y;
 				p[k][j][i] = 0;
 				if(level[k][j][i]>0) {
-					p[k][j][i] = - rho_water * gravity_z * level[k][j][i];
+					p[k][j][i] = - rho_water * gravity_y * level[k][j][i];
 				}	
 			}		
 		}

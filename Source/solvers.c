@@ -495,19 +495,6 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 			int df = deltafunc;
 			Calc_F_eul(user, wtm, fsi_wt, NumberOfTurbines, 1.0, df);
 		}
-		if (rotor_model == 2) {
-			PetscPrintf(PETSC_COMM_WORLD, "Calculate U_ref  \n");
-			Uref_ACL(user, wtm, ibm_ACD, fsi_wt, NumberOfTurbines);
-			Calc_turbineangvel(user->dt, wtm, fsi_wt);
-			char fname[80];
-			sprintf(fname,"bladesurface");
-			for(ibi=0;ibi<NumberOfTurbines;ibi++) rotor_Rot(&fsi_wt[ibi], &wtm[ibi], user->dt, ibi, fname, 2);
-			Pre_process(user, wtm, NumberOfTurbines);
-			Calc_F_lagr_ACL(user, wtm, fsi_wt, acl, NumberOfTurbines);
-			Calc_forces_ACL(user, wtm, fsi_wt, 0);
-			int df = deltafunc;
-			Calc_F_eul(user, wtm, fsi_wt, NumberOfTurbines, 1.0, df);
-		}
 		if (rotor_model == 3) {
 			PetscPrintf(PETSC_COMM_WORLD, "Calculate U_ref  \n");
 			Uref_ACL(user, wtm, ibm_ACD, fsi_wt, NumberOfTurbines);
@@ -546,31 +533,6 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 			int df = deltafunc;
 			Calc_F_eul(user, wtm, fsi_wt, NumberOfTurbines, 1.0, df);
 		}
-		if (rotor_model == 5) {
-			PetscPrintf(PETSC_COMM_WORLD, "Calculate U_ref  \n");
-			Uref_ACL(user, ibm_acl2ref, ibm_ACD, fsi_acl2ref, NumberOfTurbines);
-			for(ibi=0;ibi<NumberOfTurbines;ibi++) PetscPrintf(PETSC_COMM_WORLD, "U_ref(%i)=%le  \n", ibi, ibm_acl2ref[ibi].U_ref);
-			PetscPrintf(PETSC_COMM_WORLD, "Calculate angvel \n");
-			Calc_turbineangvel(user->dt, ibm_acl2ref, fsi_acl2ref);
-			for(ibi=0;ibi<NumberOfTurbines;ibi++) {
-				wtm[ibi].U_ref = ibm_acl2ref[ibi].U_ref;
-				fsi_wt[ibi].angvel_axis = fsi_acl2ref[ibi].angvel_axis;
-				fsi_wt[ibi].ang_axis =  fsi_acl2ref[ibi].ang_axis;
-			}		
-			char fname[80];
-			sprintf(fname,"bladesurface");
-			for(ibi=0;ibi<NumberOfTurbines;ibi++) rotor_Rot(&fsi_wt[ibi], &wtm[ibi], user->dt, ibi, fname, 2);
-			sprintf(fname,"refline");
-			for(ibi=0;ibi<NumberOfTurbines;ibi++) rotor_Rot(&fsi_acl2ref[ibi], &ibm_acl2ref[ibi], user->dt, ibi, fname, 1);
-			Pre_process(user, wtm, NumberOfTurbines);
-			Pre_process(user, ibm_acl2ref, NumberOfTurbines);
-			Calc_U_lagr(user, ibm_acl2ref, fsi_acl2ref, NumberOfTurbines);
-			Calc_F_lagr_ACL(user, ibm_acl2ref, fsi_acl2ref, acl, NumberOfTurbines); // calculate force
-			ForceProjection_l2s(user, wtm, ibm_acl2ref, fsi_wt, fsi_acl2ref, NumberOfTurbines);  // project force 
-			Calc_forces_ACL(user, ibm_acl2ref, fsi_acl2ref, 0);
-			int df = deltafunc;
-			Calc_F_eul(user, wtm, fsi_wt, NumberOfTurbines, 1.0, df);
-		}
 		if (rotor_model == 6) {
 			PetscPrintf(PETSC_COMM_WORLD, "Calculate U_ref  \n");
 			Uref_ACL(user, wtm, ibm_ACD, fsi_wt, NumberOfTurbines);
@@ -600,66 +562,6 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 			Calc_F_eul(user, wtm, fsi_wt, NumberOfTurbines, 1.0, df);
 		}
 		PetscBarrier(PETSC_NULL);
-	}
-	if (nacelle_model) {
-		PetscReal ts1, te1;
-		int my_rank;
-		MPI_Comm_rank(PETSC_COMM_WORLD, &my_rank);
-		PetscGetTime(&ts);  // xiaolei
-		// Be care, the geometry is assumed no changing during rotation
-		Cmpnts nr, na, nt; 
-		int i, ibi;
-		for(ibi=0;ibi<NumberOfNacelle;ibi++) {
-			if (fsi_nacelle[ibi].rotate_alongaxis) {
-				for (i=0; i<ibm_nacelle[ibi].n_v; i++) {
-					na.x=fsi_nacelle[ibi].nx_tb;	
-					na.y=fsi_nacelle[ibi].ny_tb;	
-					na.z=fsi_nacelle[ibi].nz_tb;	
-					double rx = ibm_nacelle[ibi].x_bp[i]-fsi_nacelle[ibi].x_c;
-					double ry = ibm_nacelle[ibi].y_bp[i]-fsi_nacelle[ibi].y_c;
-					double rz = ibm_nacelle[ibi].z_bp[i]-fsi_nacelle[ibi].z_c;
-					double rr = sqrt(rx*rx+ry*ry+rz*rz)+1.e-19;
-					nr.x = rx/rr; 
-					nr.y = ry/rr; 
-					nr.z = rz/rr;
-					nt.x=na.y*nr.z-na.z*nr.y;
-					nt.y=na.z*nr.x-na.x*nr.z;
-					nt.z=na.x*nr.y-na.y*nr.x;
-					double Ut=fsi_nacelle[ibi].angvel_axis*rr;
-					ibm_nacelle[ibi].u[i].x = Ut*nt.x;
-					ibm_nacelle[ibi].u[i].y = Ut*nt.y;
-					ibm_nacelle[ibi].u[i].z = Ut*nt.z;
-				}
-			}
-			else {
-				for (i=0; i<ibm_nacelle[ibi].n_v; i++) {
-					ibm_nacelle[ibi].u[i].x = .0;
-					ibm_nacelle[ibi].u[i].y = .0;
-					ibm_nacelle[ibi].u[i].z = .0;
-				}
-			}
-		}
-		int ipt;
-		int NumLoc=NumberOfNacelle/NumNacellePerLoc;
-		for (ibi=0;ibi<NumLoc;ibi++) 
-		for (ipt=0;ipt<NumNacellePerLoc;ipt++) {
-			int iname=ibi*NumNacellePerLoc+ipt; 
-			if (rotor_model) {
-				ibm_nacelle[iname].U_ref=wtm[ibi].U_ref; 
-			} 
-			else  ibm_nacelle[iname].U_ref=refvel_cfd; 
-		}
-
-		Calc_F_lagr_nacelle1(user, ibm_nacelle, fsi_nacelle, NumberOfNacelle);
-		char fname[80];
-		sprintf(fname,"NacellForce");
-		Calc_forces_rotor(user, ibm_nacelle, fsi_nacelle, 0, fname, NumberOfNacelle);
-		double dh=1.0;
-		int df = deltafunc;
-		Calc_F_eul(user, ibm_nacelle, fsi_nacelle, NumberOfNacelle, dh, df); 
-		PetscBarrier(PETSC_NULL);
-		PetscGetTime(&te);  // xiaolei
-		PetscPrintf(PETSC_COMM_WORLD, "Time for nacelle_model  %le\n", te-ts);
 	}
 	if (IB_delta) {
 		PetscReal ts1, te1;
@@ -708,13 +610,6 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 			char fname[80];
 			sprintf(fname,"line");
 			for(ibi=0;ibi<NumberOfTurbines;ibi++) Export_lagrdata(&fsi_wt[ibi], &wtm[ibi], user->dt, ibi, fname, 1);
-		}
-		else if (rotor_model == 5) {
-			char fname[80];
-			sprintf(fname,"bladesurface");
-			for(ibi=0;ibi<NumberOfTurbines;ibi++) Export_lagrdata(&fsi_wt[ibi], &wtm[ibi], user->dt, ibi, fname, 2);
-			sprintf(fname,"refline");
-			for(ibi=0;ibi<NumberOfTurbines;ibi++) Export_lagrdata(&fsi_acl2ref[ibi], &ibm_acl2ref[ibi], user->dt, ibi, fname, 1);
 		}
 		else if (rotor_model == 6) {
 			char fname[80];
