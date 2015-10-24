@@ -672,7 +672,7 @@ void WAVE_Formfuction2(UserCtx *user)
 		ii=user[0].wave_inf[0].WAVE_ind[jj];
 		if(!rank) printf("A:%f, Kz:%f, Kx:%f, Omega:%f, Theta:%f \n",user[0].wave_inf[0].WAVE_a[ii],user[0].wave_inf[0].WAVE_Kz[ii],user[0].wave_inf[0].WAVE_Kx[ii],user[0].wave_inf[0].WAVE_omega[ii],user[0].wave_inf[0].WAVE_theta[ii]);
 	}
-	double level_thick=1.0*dthick;
+	double level_thick=2.0*dthick;
 	double wave_source_distance_z=1.0;
 	if(wave_momentum_source==1) {
 		wave_source_distance_z=12.;//maximum wave length/2
@@ -720,7 +720,7 @@ void WAVE_Formfuction2(UserCtx *user)
 					temp_11+=user[0].wave_inf[0].WAVE_P_0[ii]*sin(user[0].wave_inf[0].WAVE_omega[ii]*user[0].wave_inf[0].WAVE_time_since_read-user[0].wave_inf[0].WAVE_Kx[ii]*cent[k][j][i].x-user[0].wave_inf[0].WAVE_theta[ii])*epscos(cent[k][j][i].z,user[0].wave_inf[0].WAVE_src_dist[ii]);
 				}
 				else if(wave_momentum_source==2) {
-					temp_11+=user[0].wave_inf[0].WAVE_P_0[ii]*cos(user[0].wave_inf[0].WAVE_omega[ii]*time-user[0].wave_inf[0].WAVE_Kx[ii]*cent[k][j][i].x-user[0].wave_inf[0].WAVE_theta[ii])*epscos(cent[k][j][i].z,user[0].wave_inf[0].WAVE_src_dist[ii]);
+					temp_11+=user[0].wave_inf[0].WAVE_P_0[ii]*sin(user[0].wave_inf[0].WAVE_omega[ii]*time-user[0].wave_inf[0].WAVE_Kx[ii]*cent[k][j][i].x-user[0].wave_inf[0].WAVE_theta[ii])*epscos(cent[k][j][i].z,user[0].wave_inf[0].WAVE_src_dist[ii]);
 				}
 				else if(wave_momentum_source==3 || wave_momentum_source==4 ) {
 					temp_11+=	user[0].wave_inf[0].WAVE_P_0[ii]*sin(user[0].wave_inf[0].WAVE_Kz[ii]*cent[k][j][i].z+user[0].wave_inf[0].WAVE_Kx[ii]*cent[k][j][i].x-user[0].wave_inf[0].WAVE_theta[ii]);
