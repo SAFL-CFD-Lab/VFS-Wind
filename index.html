@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Test web : ">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>VFS-Wind</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/cald0075/test_web">View on GitHub</a>
+
+          <h1 id="project_title">VFS-Wind®</h1>
+          <h2 id="project_tagline"></h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/cald0075/test_web/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/cald0075/test_web/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h3>
+<a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span class="octicon octicon-link"></span></a>Description</h3>
+<p>Virtual Flow Simulator (VFS®) is a state-of-the-art computational fluid mechanics (CFD) package that is capable of simulating  multi-physics/multi-phase flows with the most advanced turbulence models (RANS, LES) over complex terrains.  The flow solver is based on the Curvilinear Immersed Boundary (CURVIB) method to handle geometrically complex and moving domains. Different modules of the VFS package can provide different simulation capabilities  for specific applications ranging from  the fluid-structure interaction (FSI)  of solid and deformable bodies,  the two-phase free surface flow solver based on the level set method for ocean waves, sediment transport models  in rivers and the large-scale models of wind farms based on actuator lines and surfaces. </p>
+
+<p>All numerical features of VFS® package have been validated with known analytical and experimental data as reported in the related journal articles.  VFS® package is suitable for a broad range of engineering applications within different industries. VFS® has been used in different projects with applications in wind and hydrokinetic energy, offshore and near-shore ocean studies, cardiovascular and biological flows, and natural streams and river morphodynamics. Over the last decade, the development of VFS® has been supported and assisted with the help of various United States companies and federal agencies that are listed in the sponsor lists.  In this version, VFS-Wind®  contains all the necessary modeling tools for wind energy applications, including land-based [1] and offshore wind farms [2, 3].</p>
+
+<p>VFS® is highly scalable to run on either desktop computers or high performance clusters (up to 16,000 CPUs).  This  released version comes with a detailed user’s manual and a set of case studies designed to facilitate the learning of the various aspects of the code in a comprehensive manner. The included documentation and support material has been elaborated in a collaboration effort with Sandia National Labs under the contract DE-EE0005482. The VFS-Wind® source code is distributed under the GNU General Public License (GPL 2.0), offering to the community the flexibility to use and expand the capabilities of the package. We note that future publications including academic journals that result from the use of VFS® must be cited appropriately under the GPL v.2 license agreement.</p>
+<h3>
+<a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h3>
+<p>Some of the main features of the released version (VFS-Wind®) are as follows:
+<ul>
+	<li>Complex terrain topographies from site-specific locations.</li>
+	<li>Atmospherics turbulent wind conditions.</li>
+	<li>In offshore applications, two-phase free surface flows simulations with the presence of realistic complex waves and FSI of complex floating structures moving in 6 degrees of freedom (DOF).</li>
+	<li>Turbine rotor geometries can be either resolved with the CURVIB method or parameterized with actuator disks or actuator lines.</li>
+</ul>
+
+Additional modules, such as the sediment transport, the adaptive mesh refinement (AMR) approach, and the Finite Element methods for flexible structures, will be released in the future.
+</p>
+
+<h3>
+<a id="Gallery" class="anchor" href="#Gallery" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gallery</h3>
+
+
+<div class="imagesection" style="width:46%; float:left; margin-right:2%;">
+<img src="images/FloatingTrubine_3dview.png" style="width:100%;">
+</div>
+
+<div class="imagesection" style="width:52%; float:left;">
+<img src="images/FloatingTrubine_response1.png" style="width:100%;">
+</div>
+
+<p>6 DOF FSI simulation under real ocean wind and wave conditions (see Calderer et al [2,3] for details about this cases)</p>
+
+<div class="imagesection" style="width:49%; float:left;  margin-right:2%">
+<img src="images/FallingWedge.png" style="width:100%;">
+
+</div><div class="imagesection" style="width:49%; float:left;">
+<img src="images/FallingWedge_vel.png" style="width:100%;">
+</div>
+<p> FSI simulation of a free falling wedge impinging the free surface, resulting complex non-linear phenomena such as breaking waves and structure overtopping.</p>
+
+
+
+<h3>
+<a id="Principal Investigator" class="anchor" href="Principal Investigator" aria-hidden="true"><span class="octicon octicon-link"></span></a>Principal Investigator</h3>
+<ul>
+	<li><span>Professor Fotis Sotiropoulos,</span> <a href="mailto:fotis@umn.edu">fotis@umn.edu</a></li>
+</ul>
+
+
+<h3>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contributors</h3>
+<ul>
+	<li><span>Dr. Dennis Angelidis,</span> <a href="mailto:dennis.angelidis@gmail.com">dennis.angelidis@gmail.com</a></li>
+	<li><span>Dr. Iman Borazjani,</span> <a href="mailto:iman@buffalo.edu">iman@buffalo.edu</a></li>	
+	<li><span>Dr. Antoni Calderer,</span> <a href="mailto:cald0075@umn.edu">cald0075@umn.edu</a></li>
+	<li><span>Dr. Liang Ge,</span> <a href="mailto:liang.ge@gmail.com">liang.ge@gmail.com</a></li>
+	<li><span>Dr. Anvar Gilmanov,</span> <a href="mailto:agilmano@umn.edu">agilmano@umn.edu</a></li>
+	<li><span>Dr. Seokkoo Kang,</span> <a href="mailto:kangsk78@hanyang.ac.kr">kangsk78@hanyang.ac.kr</a></li>
+	<li><span>Dr. Ali Khosronejad,</span> <a href="mailto:akhosron@umn.edu">akhosron@umn.edu</a></li>
+	<li><span>Dr. Trung Le,</span> <a href="mailto:lebao002@umn.edu">lebao002@umn.edu</a></li>
+	<li><span>Dr. Xiaolei Yang,</span> <a href="mailto:xyang@umn.edu">xyang@umn.edu</a></li>
+</ul>
+
+<h3>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Source Code, User Manual, and Instructional Test Cases </h3>
+<ul>
+	<li><span> The </span> <a href="https://github.com/SAFL-CFD-Lab/VFS-Wind">VFS-Wind®</a> source code is available for download in the GitHub repository.</li> 
+	<li><span> Download the </span> <a href="https://raw.githubusercontent.com/SAFL-CFD-Lab/VFS-Wind/master/Documentation/Manual_VFS-Wind_v1.0.pdf">VFS-Wind® User Manual</a>.</li> 
+	<li><span> A list of 9 instructional test cases can be found in the </span> <a href="https://github.com/SAFL-CFD-Lab/VFS-Wind/tree/master/Instructional_Cases">Instructional_Cases</a> folder of the repository. The description of these cases is at the last Applications chapter of the User Manaul.</a>.</li> 
+</ul>
+
+
+
+<h3>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Selected Publications</h3>
+<ul>
+	<li><span> [1] Yang, Xiaolei, et al. "Large‐eddy simulation of turbulent flow past wind turbines/farms: the Virtual Wind Simulator (VWiS)." Wind Energy (2014).	
+	</span> <a href="http://onlinelibrary.wiley.com/doi/10.1002/we.1802/full">LINK</a></li>
+	<li><span>[2] Calderer, Antoni, Seokkoo Kang, and Fotis Sotiropoulos. "Level set immersed boundary method for coupled simulation of air/water interaction with complex floating structures." Journal of Computational Physics 277 (2014): 201-227.</span> <a href="http://www.sciencedirect.com/science/article/pii/S0021999114005567">LINK</a></li>
+	<li><span>[3] Calderer, Antoni, et al. "Coupled fluid-structure interaction simulation of floating offshore wind turbines and waves: a large eddy simulation approach." Journal of Physics: Conference Series. Vol. 524. No. 1. IOP Publishing, 2014.</span> <a href="http://iopscience.iop.org/article/10.1088/1742-6596/524/1/012091/meta;jsessionid=AF8B91FA95F3FA7ADE4EB162C0F34BCC.c1.iopscience.cld.iop.org">LINK</a></li>
+</ul>
+
+<h3>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sponsors</h3>
+<ul>
+<li>US Dept. of Energy - <a href="http://www.eere.energy.gov/" target="_blank">Energy Efficiency and&nbsp;Renewable Energy</a></li>
+<li><a href="http://www.nsf.gov/" target="_blank">National Science Foundation</a></li>
+<li><a href="http://www.nih.gov/" target="_blank">National Institutes of Health</a></li>
+<li><a href="http://www.nced.umn.edu/" target="_blank">National Center for Earth Surface Dynamics</a></li>
+<li><a href="http://www.trb.org/NCHRP/Public/NCHRP.aspx" target="_blank">National Cooperative Highway Research Program</a></li>
+<li style="margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; "><a href="http://www.ornl.gov/" target="_blank">Oak Ridge National Laboratory</a></li>
+<li><a href="http://www.xcelenergy.com" target="_blank">Xcel Energy</a></li>
+<li><a href="http://eolos.umn.edu/" target="_blank">EOLOS Wind Energy Consortium</a></li>
+<li><a href="http://verdantpower.com/" target="_blank">Verdant Power</a></li>
+<li><a href="http://environment.umn.edu/iree/" target="_blank">Initiative for Renewable Energy &amp; the Environment</a></li>
+<li><a href="https://www.msi.umn.edu/" target="_blank">Minnesota Supercomputing Institute</a></li>
+</ul>
+<h3>
+
+
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Test web maintained by <a href="https://github.com/SAFL-CFD-Lab">SAFL-CFD-Lab</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>

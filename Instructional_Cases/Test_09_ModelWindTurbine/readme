@@ -1,8 +1,0 @@
-Case folder: TSR4
-Tecplot folder: Tecplotfiles, where result images are available to compare
-
-For developing the flow field 5000 time steps are enough.
-For time-averaging the flow field, 2000 time steps are ok. When you restart for averaging, set -rstart_turbinerotation as 1 and rename TurbineTorqueControlxxxxx1_000.dat as TurbineTorqueControl000001_000.dat. 
-
-For Post-processing,you have to specify the name of the time-averaged Result* file in ./Tecplotfiles/ExtractLines_3D.mcr and run ExtractLines_3D.mcr. Then the layout files are ready to view.   
-
