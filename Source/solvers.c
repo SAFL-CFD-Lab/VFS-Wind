@@ -28,7 +28,7 @@ extern void Compute_Distance_Function(UserCtx *user);
 PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm, 
 			    FSInfo *fsi, PetscInt itr_sc,
 			    PetscInt tistart, 
-			    PetscTruth *DoSCLoop)
+			    PetscBool *DoSCLoop)
 {
   PetscReal     dS_sc, dS_MIN=1e-5, dSmax;
   UserCtx	*user;
@@ -74,13 +74,13 @@ PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm,
 				PetscPrintf(PETSC_COMM_WORLD, "Corrector Step itr # %d\n", itr_sc);
 				VecCopy(user[bi].Ucont_o, user[bi].Ucont);
 				VecCopy(user[bi].P_o, user[bi].P);
-				DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
-				DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
-				DAGlobalToLocalBegin(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
-				DAGlobalToLocalEnd(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
+				DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
+				DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
+				DMGlobalToLocalBegin(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
+				DMGlobalToLocalEnd(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
 				Contra2Cart(&(user[bi]));
       }
-      PetscBarrier(PETSC_NULL);	  
+      PetscBarrier(NULL);	  
     }
   }
 /* ==================================================================================             */
@@ -107,11 +107,11 @@ PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm,
 					for (ibi=0;ibi<NumberOfBodies;ibi++) {
 						Elmt_Move_FSI_TRANS(&fsi[ibi], &ibm[ibi]);
 					}
-					PetscBarrier(PETSC_NULL);
+					PetscBarrier(NULL);
 					for (ibi=0;ibi<NumberOfBodies;ibi++) {
 						PetscPrintf(PETSC_COMM_WORLD, "IBM_SERA\n");
 						ibm_search_advanced(&(user[bi]), &ibm[ibi], ibi);
-						PetscBarrier(PETSC_NULL);	  
+						PetscBarrier(NULL);	  
 					}
 				}
 			}
@@ -139,11 +139,11 @@ PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm,
 					for (ibi=0;ibi<NumberOfBodies;ibi++) {
 						Elmt_Move_FSI_ROT_TRANS(&fsi[ibi], &ibm[ibi],user->dt,0);					
 					}
-					PetscBarrier(PETSC_NULL);
+					PetscBarrier(NULL);
 					for (ibi=0;ibi<NumberOfBodies;ibi++) {
 						PetscPrintf(PETSC_COMM_WORLD, "IBM_SERA\n");
 						ibm_search_advanced(&(user[bi]), &ibm[ibi], ibi);
-						PetscBarrier(PETSC_NULL);	  
+						PetscBarrier(NULL);	  
 					}
 				}
 			}
@@ -164,11 +164,11 @@ PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm,
 						if(ibi==0) {
 							Elmt_Move_FSI_ROT(&fsi[ibi], &ibm[ibi], user[bi].dt, ibi);
 						}
-						PetscBarrier(PETSC_NULL);
+						PetscBarrier(NULL);
 						PetscPrintf(PETSC_COMM_WORLD, "IBM_SERA solver.c begin\n");
 						ibm_search_advanced(&(user[bi]), &ibm[ibi], ibi);
 						PetscPrintf(PETSC_COMM_WORLD, "IBM_SERA solver.c end\n");
-						PetscBarrier(PETSC_NULL);	  
+						PetscBarrier(NULL);	  
 					}
 				}
 			}
@@ -199,11 +199,11 @@ PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm,
 					for (ibi=1;ibi<NumberOfBodies;ibi++) {
 						Elmt_Move_FSI_ROT(&fsi[ibi], &ibm[ibi], user[bi].dt, ibi);
 					}
-					PetscBarrier(PETSC_NULL);
+					PetscBarrier(NULL);
 					for (ibi=0;ibi<NumberOfBodies;ibi++) {
 						PetscPrintf(PETSC_COMM_WORLD, "IBM_SERA\n");
 						ibm_search_advanced(&(user[bi]), &ibm[ibi], ibi);
-						PetscBarrier(PETSC_NULL);	  
+						PetscBarrier(NULL);	  
 					}
 				}
       }
@@ -259,7 +259,7 @@ PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm,
 PetscErrorCode Struc_predictor(UserMG *usermg,IBMNodes *ibm, 
 			       FSInfo *fsi, PetscInt itr_sc,
 			       PetscInt tistart, 
-			       PetscTruth *DoSCLoop)
+			       PetscBool *DoSCLoop)
 {
   UserCtx	*user;
   PetscInt	bi,ibi, level, MHV_stuck=0 ;
@@ -292,11 +292,11 @@ PetscErrorCode Struc_predictor(UserMG *usermg,IBMNodes *ibm,
 					for (ibi=1;ibi<NumberOfBodies;ibi++) {
 						Elmt_Move_FSI_ROT(&fsi[ibi], &ibm[ibi], user[bi].dt, ibi);
 					}
-					PetscBarrier(PETSC_NULL);
+					PetscBarrier(NULL);
 					for (ibi=0;ibi<NumberOfBodies;ibi++) {
 						PetscPrintf(PETSC_COMM_WORLD, "IBM_SERA\n");
 						ibm_search_advanced(&(user[bi]), &ibm[ibi], ibi);
-						PetscBarrier(PETSC_NULL);	  
+						PetscBarrier(NULL);	  
 					}
 				}
       }
@@ -347,7 +347,7 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 				ibm_interpolation_advanced(&user[bi]);
 			}
 			IB_BC(&user[bi]);
-			DALocalToGlobal(user[bi].fda, user[bi].lUcont, INSERT_VALUES, user[bi].Ucont);
+			DMLocalToGlobal(user[bi].fda, user[bi].lUcont, INSERT_VALUES, user[bi].Ucont);
 		}
 	}
 
@@ -363,8 +363,8 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 	Calc_k_Flux(&user[0]);
 
 	if(les){
-		DAGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
-		DAGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+		DMGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+		DMGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
 		Contra2Cart(user);
 		if(ti%dynamic_freq==0 || ti==tistart) Compute_Smagorinsky_Constant_1(user, user->lUcont, user->lUcat);
 		Compute_eddy_viscosity_LES(user);
@@ -377,8 +377,8 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 		if(!fix_level && ti!=0) {
 			double dt = 1.*user[0].dt;
 			VecCopy(user[0].Levelset, user[0].Levelset_o);
-			DAGlobalToLocalBegin(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
-			DAGlobalToLocalEnd(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
+			DMGlobalToLocalBegin(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
+			DMGlobalToLocalEnd(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
 			Levelset_BC(&user[0]);
 			Advect_Levelset(&user[0],dt);
 			Levelset_BC(&user[0]);
@@ -400,7 +400,7 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 	      Compute_Distance_Function(user);
 	      PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 	      VecView(user->Distance, viewer);
-	      PetscViewerDestroy(viewer);
+	      PetscViewerDestroy(&viewer);
 	    }
 	  }
 		if(ti==0) {
@@ -409,19 +409,19 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 			VecSet(user->lNu_t, user->ren);
 			bi=0;
 			VecCopy(user[bi].K_Omega, user[bi].K_Omega_o);
-			DAGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
-			DAGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
-			DAGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
-			DAGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
+			DMGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
+			DMGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
+			DMGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
+			DMGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
 		}
 		else {
 		  bi=0;
 		  if(ti==tistart) {
 		    VecCopy(user[bi].K_Omega, user[bi].K_Omega_o);
-		    DAGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
-		    DAGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
-		    DAGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
-		    DAGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
+		    DMGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
+		    DMGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
+		    DMGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
+		    DMGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
 		  }
 		  K_Omega_Set_Constant(user);
 		}
@@ -561,13 +561,13 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 			PetscPrintf(PETSC_COMM_WORLD, "distribute to Eulerian grid \n");
 			Calc_F_eul(user, wtm, fsi_wt, NumberOfTurbines, 1.0, df);
 		}
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 	}
 	if (IB_delta) {
 		PetscReal ts1, te1;
 		int my_rank;
 		MPI_Comm_rank(PETSC_COMM_WORLD, &my_rank);
-		PetscGetTime(&ts);  // xiaolei
+		PetscTime(&ts);  // xiaolei
 		// Be care, the geometry is assumed no changing during rotation
 		if (rotate_IBdelta) {
 			Cmpnts nr, na, nt; 
@@ -601,8 +601,8 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 		double dh=1.0;
 		int df = deltafunc;
 		Calc_F_eul(user, ibm_IBDelta, fsi_IBDelta, NumberOfIBDelta, dh, df); 
-  	PetscBarrier(PETSC_NULL);
-		PetscGetTime(&te);  // xiaolei
+  	PetscBarrier(NULL);
+		PetscTime(&te);  // xiaolei
 		PetscPrintf(PETSC_COMM_WORLD, "Time for IB_delta  %le\n", te-ts);
  }
 	if(rotor_model){
@@ -618,7 +618,7 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 			sprintf(fname,"refline");
 			for(ibi=0;ibi<NumberOfTurbines;ibi++) Export_lagrdata(&fsi_acl2ref[ibi], &ibm_acl2ref[ibi], user->dt, ibi, fname, 1);
 		}
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 	}
 	if(inletprofile==20){}
 	else if (implicit==1) ImplicitMomentumSolver(user, ibm, fsi);
@@ -634,18 +634,18 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 		COEF_TIME_ACCURACY=1.0;
 		RungeKutta(user, ibm, fsi);
 	}
-	VecDestroy(user[0].Fp);
-	VecDestroy(user[0].Div1);
-	VecDestroy(user[0].Div2);
-	VecDestroy(user[0].Div3);
-	VecDestroy(user[0].Visc1);
-	VecDestroy(user[0].Visc2);
-	VecDestroy(user[0].Visc3);
+	VecDestroy(&user[0].Fp);
+	VecDestroy(&user[0].Div1);
+	VecDestroy(&user[0].Div2);
+	VecDestroy(&user[0].Div3);
+	VecDestroy(&user[0].Visc1);
+	VecDestroy(&user[0].Visc2);
+	VecDestroy(&user[0].Visc3);
 
 	/* ==================================================================================             */
 	/*    Poisson Solver! */
 	/* ==================================================================================             */
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 
 	for(bi=0; bi<block_number; bi++) {
 		if(inletprofile==20){}
@@ -661,8 +661,8 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 	for (bi=0; bi<block_number; bi++) {
 		UpdatePressure(&user[bi]);
 		Projection(&(user[bi]));
-		DAGlobalToLocalBegin(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
-		DAGlobalToLocalEnd(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
+		DMGlobalToLocalBegin(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
+		DMGlobalToLocalEnd(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
 	}
 
 	/* ==================================================================================             */
@@ -684,7 +684,7 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 	Divergence(&(user[bi]));
 	for (bi=0; bi<block_number; bi++) {
 		IB_BC(&user[bi]);
-		DALocalToGlobal(user[bi].fda, user[bi].lUcont, INSERT_VALUES, user[bi].Ucont);
+		DMLocalToGlobal(user[bi].fda, user[bi].lUcont, INSERT_VALUES, user[bi].Ucont);
 		Contra2Cart(&(user[bi]));
 	}
 	bi=0;
@@ -696,8 +696,8 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 	if (levelset && itr_sc==1 && !fix_level && levelset_solve2) {
 		VecAXPBY(user[0].Levelset,.5,.5,user[0].Levelset_o);
 		VecCopy(user[0].Levelset, user[0].Levelset_o);
-		DAGlobalToLocalBegin(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
-		DAGlobalToLocalEnd(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
+		DMGlobalToLocalBegin(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
+		DMGlobalToLocalEnd(user[0].da, user[0].Levelset, INSERT_VALUES, user[0].lLevelset);
 		if(!fix_level && ti!=0) {
 			double dt = .5*user[0].dt;
 			Levelset_BC(&user[0]);
@@ -739,10 +739,10 @@ PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt i
 		K_Omega_Set_Constant(user);
 		Solve_K_Omega(user);
 		VecCopy(user[bi].K_Omega, user[bi].K_Omega_o);
-		DAGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
-		DAGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
-		DAGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
-		DAGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
+		DMGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
+		DMGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega, INSERT_VALUES, user[bi].lK_Omega);
+		DMGlobalToLocalBegin(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
+		DMGlobalToLocalEnd(user[bi].fda2, user[bi].K_Omega_o, INSERT_VALUES, user[bi].lK_Omega_o);
 	}
 	bi=0;
 	if (ti == (ti/tiout) * tiout) {

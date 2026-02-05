@@ -306,7 +306,7 @@ double les_eps=1.e-7;
 
 double mean_pressure_gradient=0;	// relative tolerance
 PetscReal max_cs=0.5;
-PetscTruth dpdz_set=PETSC_FALSE;
+PetscBool dpdz_set=PETSC_FALSE;
 int save_inflow=0;
 int save_inflow_period=100;
 int save_inflow_minus=0;
@@ -315,7 +315,7 @@ int localstep=1;
 int inflow_recycle_perioid=20000;
 int save_memory=1;
 int ibm_search=0;
-PetscTruth rough_set=PETSC_FALSE;
+PetscBool rough_set=PETSC_FALSE;
 double roughness_size=0.0;
 int save_point[3000][10];
 int nsave_points=0;
@@ -333,7 +333,7 @@ double di_max, dj_max, dk_max;
 //double rho_water=1000., rho_air=1.204;	// bubble
 //double mu_water=1, mu_air=0.1;
 double dthick=1.5;
-PetscTruth dthick_set=PETSC_FALSE;
+PetscBool dthick_set=PETSC_FALSE;
 double rho_water=1., rho_air=0.001;	// sloshing
 double mu_water=1.e-3, mu_air=1.78e-5;
 double angvel=3.141592;
@@ -346,9 +346,9 @@ int fix_outlet=0, fix_inlet=0;
 int rotdir=2; // 0: rotate around the x-axis, 1:y-axis, 2:z-axis
 double x_r=0, y_r=0, z_r=0; // center of rotation of rfsi
 
-PetscTruth	rstart_flg=PETSC_FALSE;
-PetscTruth	inlet_y_flag=PETSC_FALSE;
-PetscTruth	inlet_z_flag=PETSC_FALSE;
+PetscBool	rstart_flg=PETSC_FALSE;
+PetscBool	inlet_y_flag=PETSC_FALSE;
+PetscBool	inlet_z_flag=PETSC_FALSE;
 
 IBMNodes	*ibm_ptr;
 FSInfo        *fsi_ptr;
@@ -384,51 +384,51 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
   
 	sprintf(filen, "%s/vfield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->Ucont));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Ucont, viewer);
+	PetscViewerDestroy(&viewer);
 
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 
-	PetscOptionsClearValue("-vecload_block_size");
+	PetscOptionsClearValue(NULL, "-vecload_block_size");
 
 	sprintf(filen, "%s/pfield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->P));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->P, viewer);
+	PetscViewerDestroy(&viewer);
 
 	sprintf(filen, "%s/nvfield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->Nvert_o));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Nvert_o, viewer);
+	PetscViewerDestroy(&viewer);
   
 	sprintf(filen, "%s/ufield%06d_%1d.dat", path, ti, user->_this);	// Seokkoo Kang
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->Ucat));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Ucat, viewer);
+	PetscViewerDestroy(&viewer);
   
 	if(!immersed) {
           VecSet(user->Nvert, 0.);
           VecSet(user->Nvert_o, 0.);
 	}
 
-	DAGlobalToLocalBegin(user->da, user->Nvert_o, INSERT_VALUES, user->lNvert_o);
-	DAGlobalToLocalEnd(user->da, user->Nvert_o, INSERT_VALUES, user->lNvert_o);
+	DMGlobalToLocalBegin(user->da, user->Nvert_o, INSERT_VALUES, user->lNvert_o);
+	DMGlobalToLocalEnd(user->da, user->Nvert_o, INSERT_VALUES, user->lNvert_o);
 	
-	DAGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
-	DAGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+	DMGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+	DMGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
 
 	VecCopy(user->Ucont, user->Ucont_o);
-	DAGlobalToLocalBegin(user->fda, user->Ucont_o, INSERT_VALUES, user->lUcont_o);
-	DAGlobalToLocalEnd(user->fda, user->Ucont_o, INSERT_VALUES, user->lUcont_o);
+	DMGlobalToLocalBegin(user->fda, user->Ucont_o, INSERT_VALUES, user->lUcont_o);
+	DMGlobalToLocalEnd(user->fda, user->Ucont_o, INSERT_VALUES, user->lUcont_o);
   
-	DAGlobalToLocalBegin(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
-	DAGlobalToLocalEnd(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalBegin(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalEnd(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
   
-	DAGlobalToLocalBegin(user->fda, user->Ucat, INSERT_VALUES, user->lUcat_old);
-        DAGlobalToLocalEnd(user->fda, user->Ucat, INSERT_VALUES, user->lUcat_old);
+	DMGlobalToLocalBegin(user->fda, user->Ucat, INSERT_VALUES, user->lUcat_old);
+        DMGlobalToLocalEnd(user->fda, user->Ucat, INSERT_VALUES, user->lUcat_old);
 
-	DAGlobalToLocalBegin(user->da, user->P, INSERT_VALUES, user->lP);
-	DAGlobalToLocalEnd(user->da, user->P, INSERT_VALUES, user->lP);
+	DMGlobalToLocalBegin(user->da, user->P, INSERT_VALUES, user->lP);
+	DMGlobalToLocalEnd(user->da, user->P, INSERT_VALUES, user->lP);
   
 	if(averaging) {	// Seokkoo Kang
 		sprintf(filen, "%s/su0_%06d_%1d.dat", path, ti, user->_this);
@@ -467,53 +467,53 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 		}
 		else {
 			fclose(fp);
-			PetscBarrier(PETSC_NULL);
+			PetscBarrier(NULL);
 			sprintf(filen, "%s/su0_%06d_%1d.dat", path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, user->Ucat_sum);
-			PetscViewerDestroy(viewer);
+			VecLoad(user->Ucat_sum, viewer);
+			PetscViewerDestroy(&viewer);
 			
 			sprintf(filen, "%s/su1_%06d_%1d.dat", path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, user->Ucat_cross_sum);
-			PetscViewerDestroy(viewer);
+			VecLoad(user->Ucat_cross_sum, viewer);
+			PetscViewerDestroy(&viewer);
 		  
 			sprintf(filen, "%s/su2_%06d_%1d.dat", path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, (user->Ucat_square_sum));
-			PetscViewerDestroy(viewer);
+			VecLoad(user->Ucat_square_sum, viewer);
+			PetscViewerDestroy(&viewer);
 			
 			sprintf(filen, "%s/sp_%06d_%1d.dat", path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, user->P_sum);
-			PetscViewerDestroy(viewer);
+			VecLoad(user->P_sum, viewer);
+			PetscViewerDestroy(&viewer);
 			
 			if(les) {
 			  sprintf(filen, "%s/snut_%06d_%1d.dat", path, ti, user->_this);
 			  if( file_exist(filen) ) {
 			    PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			    VecLoadIntoVector(viewer, user->Nut_sum);
-			    PetscViewerDestroy(viewer);
+			    VecLoad(user->Nut_sum, viewer);
+			    PetscViewerDestroy(&viewer);
 			  }
 			}
 			
 			if(rans) {
 			  sprintf(filen, "%s/sk_%06d_%1d.dat", path, ti, user->_this);
 			  PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			  VecLoadIntoVector(viewer, user->K_sum);
-			  PetscViewerDestroy(viewer);
+			  VecLoad(user->K_sum, viewer);
+			  PetscViewerDestroy(&viewer);
 			}
 
 			if(averaging>=2) {
 				sprintf(filen, "%s/sp2_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, user->P_square_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(user->P_square_sum, viewer);
+				PetscViewerDestroy(&viewer);
 				/*
 				sprintf(filen, "%s/sp1_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, user->P_cross_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(user->P_cross_sum, viewer);
+				PetscViewerDestroy(&viewer);
 				*/
 			}
 			
@@ -522,36 +522,36 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 					sprintf(filen, "%s/stauS_%06d_%1d.dat", path, ti, user->_this);
 					if( file_exist(filen) ) {
 					  PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-					  VecLoadIntoVector(viewer, user->tauS_sum);
-					  PetscViewerDestroy(viewer);
+					  VecLoad(user->tauS_sum, viewer);
+					  PetscViewerDestroy(&viewer);
 					}
 					else PetscPrintf(PETSC_COMM_WORLD, "Cannot open %s !\n", filen);
 				}
 				
 				sprintf(filen, "%s/su3_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, user->Udp_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(user->Udp_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "%s/su4_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, user->dU2_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(user->dU2_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "%s/su5_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, user->UUU_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(user->UUU_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "%s/svo_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, user->Vort_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(user->Vort_sum, viewer);
+				PetscViewerDestroy(&viewer);
 				
 				sprintf(filen, "%s/svo2_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, user->Vort_square_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(user->Vort_square_sum, viewer);
+				PetscViewerDestroy(&viewer);
 			}
 			
 			PetscPrintf(PETSC_COMM_WORLD,"\n\n*** Read %s, continuing averaging ... ***\n\n", filen);
@@ -571,15 +571,15 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 		else {
 			fclose(fp);
 		
-			PetscBarrier(PETSC_NULL);
+			PetscBarrier(NULL);
 			
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, user->Levelset);
-			PetscViewerDestroy(viewer);
+			VecLoad(user->Levelset, viewer);
+			PetscViewerDestroy(&viewer);
 			
 			VecCopy (user->Levelset, user->Levelset_o);
-			DAGlobalToLocalBegin(user->da, user->Levelset, INSERT_VALUES, user->lLevelset);
-			DAGlobalToLocalEnd(user->da, user->Levelset, INSERT_VALUES, user->lLevelset);
+			DMGlobalToLocalBegin(user->da, user->Levelset, INSERT_VALUES, user->lLevelset);
+			DMGlobalToLocalEnd(user->da, user->Levelset, INSERT_VALUES, user->lLevelset);
 		}
 		
 	}
@@ -598,16 +598,16 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 		else {
 			fclose(fp);
 		
-			PetscBarrier(PETSC_NULL);
+			PetscBarrier(NULL);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, Cs);
-			PetscViewerDestroy(viewer);
+			VecLoad(Cs, viewer);
+			PetscViewerDestroy(&viewer);
 		}
 		
-		DAGlobalToLocalBegin(user->da, Cs, INSERT_VALUES, user->lCs);
-		DAGlobalToLocalEnd(user->da, Cs, INSERT_VALUES, user->lCs);
+		DMGlobalToLocalBegin(user->da, Cs, INSERT_VALUES, user->lCs);
+		DMGlobalToLocalEnd(user->da, Cs, INSERT_VALUES, user->lCs);
 		
-		VecDestroy(Cs);
+		VecDestroy(&Cs);
 	}
   
 	if(rans) {
@@ -615,8 +615,8 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 		sprintf(filen, "%s/kfield%06d_%1d.dat", path, ti, user->_this);
 		if( file_exist(filen) ) {
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer,user->K_Omega);
-			PetscViewerDestroy(viewer);
+			VecLoad(user->K_Omega, viewer);
+			PetscViewerDestroy(&viewer);
 		}
 		else {
 		  //K_Omega_IC(user);
@@ -627,11 +627,11 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 		
 		VecCopy(user->K_Omega, user->K_Omega_o);
 			
-		DAGlobalToLocalBegin(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
-		DAGlobalToLocalEnd(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+		DMGlobalToLocalBegin(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+		DMGlobalToLocalEnd(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
 			
-		DAGlobalToLocalBegin(user->fda2, user->K_Omega_o, INSERT_VALUES, user->lK_Omega_o);
-		DAGlobalToLocalEnd(user->fda2, user->K_Omega_o, INSERT_VALUES, user->lK_Omega_o);
+		DMGlobalToLocalBegin(user->fda2, user->K_Omega_o, INSERT_VALUES, user->lK_Omega_o);
+		DMGlobalToLocalEnd(user->fda2, user->K_Omega_o, INSERT_VALUES, user->lK_Omega_o);
 		
 		if(rans==3) {
 		  // distance
@@ -639,8 +639,8 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 		  if( file_exist(filen) ) {
 		    PetscPrintf(PETSC_COMM_WORLD, "Reading %s !\n", filen);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer,user->Distance);
-			PetscViewerDestroy(viewer);
+			VecLoad(user->Distance, viewer);
+			PetscViewerDestroy(&viewer);
 		  }
 		  
 		  else {
@@ -648,7 +648,7 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 		    /*Compute_Distance_Function(user);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->Distance, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 		    */
 		  }
 		  
@@ -666,15 +666,15 @@ PetscErrorCode Ucat_Binary_Output(UserCtx *user)
 	int rank;
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	
 	sprintf(filen, "%s/ufield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 	VecView(user->Ucat, viewer);
-	PetscViewerDestroy(viewer);
+	PetscViewerDestroy(&viewer);
 	sprintf(filen, "%s/ufield%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 	
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
   
 	return 0;
 }
@@ -690,31 +690,31 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	
 	
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	
 	sprintf(filen, "%s/vfield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 	VecView(user->Ucont, viewer);
-	PetscViewerDestroy(viewer);
+	PetscViewerDestroy(&viewer);
 	sprintf(filen, "%s/vfield%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 	
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 
 	sprintf(filen, "%s/ufield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 	VecView(user->Ucat, viewer);
-	PetscViewerDestroy(viewer);
+	PetscViewerDestroy(&viewer);
 	sprintf(filen, "%s/ufield%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 	
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 
 	sprintf(filen, "%s/pfield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 	VecView(user->P, viewer);
-	PetscViewerDestroy(viewer);
+	PetscViewerDestroy(&viewer);
 	sprintf(filen, "%s/pfield%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 	
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	
 	if(qcr) {
 		Vec Q;
@@ -724,57 +724,57 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 		sprintf(filen, "%s/qfield%06d_%1d.dat", path, ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(Q, viewer);
-		PetscViewerDestroy(viewer);
+		PetscViewerDestroy(&viewer);
 		sprintf(filen, "%s/qfield%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 		
-		VecDestroy(Q);
-		PetscBarrier(PETSC_NULL);
+		VecDestroy(&Q);
+		PetscBarrier(NULL);
 	}
 	
 	sprintf(filen, "%s/nvfield%06d_%1d.dat", path, ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 	VecView(user->Nvert, viewer);
-	PetscViewerDestroy(viewer);
+	PetscViewerDestroy(&viewer);
 	sprintf(filen, "%s/nvfield%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 	
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
   
 	if(averaging && ti!=0) {	// Seokkoo Kang
 		sprintf(filen, "%s/su0_%06d_%1d.dat", path, ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(user->Ucat_sum, viewer);
-		PetscViewerDestroy(viewer);
+		PetscViewerDestroy(&viewer);
 		sprintf(filen, "%s/su0_%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 		
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		  
 		sprintf(filen, "%s/su1_%06d_%1d.dat", path, ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(user->Ucat_cross_sum, viewer);
-		PetscViewerDestroy(viewer);  
+		PetscViewerDestroy(&viewer);  
 		sprintf(filen, "%s/su1_%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 		
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		
 		sprintf(filen, "%s/su2_%06d_%1d.dat", path, ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(user->Ucat_square_sum, viewer);
-		PetscViewerDestroy(viewer);
+		PetscViewerDestroy(&viewer);
 		sprintf(filen, "%s/su2_%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 		
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		  
 		sprintf(filen, "%s/sp_%06d_%1d.dat",path, ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(user->P_sum, viewer);
-		PetscViewerDestroy(viewer);
+		PetscViewerDestroy(&viewer);
 		sprintf(filen, "%s/sp_%06d_%1d.dat.info",path, ti, user->_this);	if(!rank) unlink(filen);
 		
 		if(les) {
 		  sprintf(filen, "%s/snut_%06d_%1d.dat",path, ti, user->_this);
 		  PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		  VecView(user->Nut_sum, viewer);
-		  PetscViewerDestroy(viewer);
+		  PetscViewerDestroy(&viewer);
 		  sprintf(filen, "%s/snut_%06d_%1d.dat.info",path, ti, user->_this);        if(!rank) unlink(filen);
 		}
 
@@ -782,7 +782,7 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 		  sprintf(filen, "%s/sk_%06d_%1d.dat",path, ti, user->_this);
 		  PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		  VecView(user->K_sum, viewer);
-		  PetscViewerDestroy(viewer);
+		  PetscViewerDestroy(&viewer);
 		  sprintf(filen, "%s/sk_%06d_%1d.dat.info",path, ti, user->_this);        if(!rank) unlink(filen);
 		}
 
@@ -798,13 +798,13 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 			sprintf(filen, "%s/sp2_%06d_%1d.dat",path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->P_square_sum, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 			sprintf(filen, "%s/sp2_%06d_%1d.dat.info",path, ti, user->_this);        if(!rank) unlink(filen);
 			/*
 			sprintf(filen, "%s/sp1_%06d_%1d.dat",path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->P_cross_sum, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 			sprintf(filen, "%s/sp1_%06d_%1d.dat.info",path, ti, user->_this);        if(!rank) unlink(filen);
 			*/
 		}
@@ -814,42 +814,42 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 				sprintf(filen, "%s/stauS_%06d_%1d.dat", path, ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 				VecView(user->tauS_sum, viewer);
-				PetscViewerDestroy(viewer);
+				PetscViewerDestroy(&viewer);
 				sprintf(filen, "%s/stauS_%06d_%1d.dat.info",path, ti, user->_this);if(!rank) unlink(filen);
 			}
 				
 			sprintf(filen, "%s/su3_%06d_%1d.dat",path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->Udp_sum, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 			sprintf(filen, "%s/su3_%06d_%1d.dat.info",path, ti, user->_this);if(!rank) unlink(filen);
 
 			sprintf(filen, "%s/su4_%06d_%1d.dat",path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->dU2_sum, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 			sprintf(filen, "%s/su4_%06d_%1d.dat.info",path, ti, user->_this);if(!rank) unlink(filen);
 
 			sprintf(filen, "%s/su5_%06d_%1d.dat",path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->UUU_sum, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 			sprintf(filen, "%s/su5_%06d_%1d.dat.info",path, ti, user->_this);if(!rank) unlink(filen);
 
 			sprintf(filen, "%s/svo_%06d_%1d.dat",path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->Vort_sum, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 			sprintf(filen, "%s/svo_%06d_%1d.dat.info",path, ti, user->_this);        if(!rank) unlink(filen);
 			
 			sprintf(filen, "%s/svo2_%06d_%1d.dat",path, ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 			VecView(user->Vort_square_sum, viewer);
-			PetscViewerDestroy(viewer);
+			PetscViewerDestroy(&viewer);
 			sprintf(filen, "%s/svo2_%06d_%1d.dat.info",path, ti, user->_this);        if(!rank) unlink(filen);
 		}
 		
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 	}
   
 	if(levelset) {
@@ -857,7 +857,7 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 		
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(user->Levelset, viewer);
-		PetscViewerDestroy(viewer);
+		PetscViewerDestroy(&viewer);
 		sprintf(filen, "%s/lfield%06d_%1d.dat.info",path, ti, user->_this);	if(!rank) unlink(filen);
 	}
 	
@@ -865,26 +865,26 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 		Vec Cs;
 		
 		VecDuplicate(user->P, &Cs);
-		DALocalToGlobal(user->da, user->lCs, INSERT_VALUES, Cs);
+		DMLocalToGlobal(user->da, user->lCs, INSERT_VALUES, Cs);
 		
 		sprintf(filen, "%s/cs_%06d_%1d.dat", path, ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(Cs, viewer);
-		PetscViewerDestroy(viewer);
+		PetscViewerDestroy(&viewer);
 		sprintf(filen, "%s/cs_%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 		
-		PetscBarrier(PETSC_NULL);
-		VecDestroy(Cs);
+		PetscBarrier(NULL);
+		VecDestroy(&Cs);
 	}
 	
 	if(rans) {
 		sprintf(filen, "%s/kfield%06d_%1d.dat", path, ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_WRITE, &viewer);
 		VecView(user->K_Omega, viewer);
-		PetscViewerDestroy(viewer);
+		PetscViewerDestroy(&viewer);
 		sprintf(filen, "%s/kfield%06d_%1d.dat.info", path, ti, user->_this);	if(!rank) unlink(filen);
 		
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 	}
   
 	if(!rank && delete_previous_file && delete_count++>=2 && ti-tiout*2!=0) {
@@ -928,15 +928,15 @@ PetscErrorCode Ucont_P_Binary_Output(UserCtx *user)
 		}
 
 	}
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
   
 	return 0;
 }
 
 PetscErrorCode Divergence(UserCtx *user)
 {
-  DA		da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM		da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
 
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
@@ -963,11 +963,11 @@ PetscErrorCode Divergence(UserCtx *user)
   if (ye==my) lye = ye-1;
   if (ze==mz) lze = ze-1;
 
-  DAVecGetArray(fda,user->lUcont, &ucont);
-  DAVecGetArray(da, user->lAj, &aj);
+  DMDAVecGetArray(fda,user->lUcont, &ucont);
+  DMDAVecGetArray(da, user->lAj, &aj);
   VecDuplicate(user->P, &Div);
-  DAVecGetArray(da, Div, &div);
-  DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(da, Div, &div);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
   for (k=lzs; k<lze; k++) {
     for (j=lys; j<lye; j++) {
       for (i=lxs; i<lxe; i++) {
@@ -1037,7 +1037,7 @@ PetscErrorCode Divergence(UserCtx *user)
       }
     }
   }
-  DAVecRestoreArray(da, Div, &div);
+  DMDAVecRestoreArray(da, Div, &div);
   VecMax(Div, &i, &maxdiv);
   PetscPrintf(PETSC_COMM_WORLD, "Maxdiv %d %d %e\n", ti, i, maxdiv);
   PetscInt mi;
@@ -1066,17 +1066,17 @@ PetscErrorCode Divergence(UserCtx *user)
 	fclose(f);
   }
   
-  DAVecRestoreArray(da, user->lNvert, &nvert);
-  DAVecRestoreArray(fda, user->lUcont, &ucont);
-  DAVecRestoreArray(da, user->lAj, &aj);
-  VecDestroy(Div);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lUcont, &ucont);
+  DMDAVecRestoreArray(da, user->lAj, &aj);
+  VecDestroy(&Div);
   return(0);
 }
 
 void write_data(UserCtx *user)
 {
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info = user->info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info = user->info;
 
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt  	ys = info.ys, ye = info.ys + info.ym;
@@ -1104,18 +1104,18 @@ void write_data(UserCtx *user)
 	Cmpnts	***ucat, ***ucont, ***csi, ***eta, ***zet, ***cent;
   
 	if(levelset) {
-		DAVecGetArray(da, user->lDensity, &rho);
-		DAVecGetArray(da, user->lLevelset, &level);
+		DMDAVecGetArray(da, user->lDensity, &rho);
+		DMDAVecGetArray(da, user->lLevelset, &level);
 	}
-	DAVecGetArray(da,user->lAj, &aj);
-	DAVecGetArray(da, user->lP, &p);
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(fda,user->lCsi, &csi);
-	DAVecGetArray(fda,user->lEta, &eta);
-	DAVecGetArray(fda,user->lZet, &zet);
-	DAVecGetArray(fda,user->lUcat, &ucat);
-	DAVecGetArray(fda,user->lUcont, &ucont);
-	DAVecGetArray(fda,user->lCent, &cent);
+	DMDAVecGetArray(da,user->lAj, &aj);
+	DMDAVecGetArray(da, user->lP, &p);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(fda,user->lCsi, &csi);
+	DMDAVecGetArray(fda,user->lEta, &eta);
+	DMDAVecGetArray(fda,user->lZet, &zet);
+	DMDAVecGetArray(fda,user->lUcat, &ucat);
+	DMDAVecGetArray(fda,user->lUcont, &ucont);
+	DMDAVecGetArray(fda,user->lCent, &cent);
 	
 	
 	// for sloshing recording
@@ -1192,7 +1192,7 @@ void write_data(UserCtx *user)
 	}
 	
 	if(levelset && export_FS_elev_center) {
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		PetscGlobalSum(&lvol, &vol, PETSC_COMM_WORLD);
 		PetscGlobalMax(&lz_sloshing, &z_sloshing, PETSC_COMM_WORLD);
 		if(!my_rank) {
@@ -1209,7 +1209,7 @@ void write_data(UserCtx *user)
 		}
 	} 
 	if(levelset && sloshing) {
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		PetscGlobalSum(&lvol, &vol, PETSC_COMM_WORLD);
 		PetscGlobalMax(&lz_sloshing, &z_sloshing, PETSC_COMM_WORLD);
 		if(!my_rank) {
@@ -1265,7 +1265,7 @@ void write_data(UserCtx *user)
 		}
 	} 	
 
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	if(user->bctype[0]==11 && ti) {
 		PetscGlobalSum(&user->lA_cyl, &user->A_cyl, PETSC_COMM_WORLD);
 		PetscGlobalSum(&user->lA_cyl_x, &user->A_cyl_x, PETSC_COMM_WORLD);
@@ -1293,7 +1293,7 @@ void write_data(UserCtx *user)
 			fclose(fp);
 		}
 	}
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	
 	if(/*inletprofile==13 &&*/ ti) {
 		
@@ -1310,18 +1310,18 @@ void write_data(UserCtx *user)
 	}
   
 	if(levelset) {
-		DAVecRestoreArray(da, user->lDensity, &rho);
-		DAVecRestoreArray(da, user->lLevelset, &level);
+		DMDAVecRestoreArray(da, user->lDensity, &rho);
+		DMDAVecRestoreArray(da, user->lLevelset, &level);
 	}
-	DAVecRestoreArray(da,user->lAj, &aj);
-	DAVecRestoreArray(da, user->lP, &p);
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(fda,user->lCsi, &csi);
-	DAVecRestoreArray(fda,user->lEta, &eta);
-	DAVecRestoreArray(fda,user->lZet, &zet);
-	DAVecRestoreArray(fda,user->lUcat, &ucat);
-	DAVecRestoreArray(fda,user->lUcont, &ucont);
-	DAVecRestoreArray(fda,user->lCent, &cent);
+	DMDAVecRestoreArray(da,user->lAj, &aj);
+	DMDAVecRestoreArray(da, user->lP, &p);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(fda,user->lCsi, &csi);
+	DMDAVecRestoreArray(fda,user->lEta, &eta);
+	DMDAVecRestoreArray(fda,user->lZet, &zet);
+	DMDAVecRestoreArray(fda,user->lUcat, &ucat);
+	DMDAVecRestoreArray(fda,user->lUcont, &ucont);
+	DMDAVecRestoreArray(fda,user->lCent, &cent);
 }
 
 #undef __FUNCT__
@@ -1339,12 +1339,12 @@ int main(int argc, char **argv)
 
 	// Added for fsi
 	FSInfo        *fsi;
-	PetscTruth    DoSCLoop;
+	PetscBool    DoSCLoop;
 	PetscInt      itr_sc;
 	
 	PetscInt level;
 	UserMG usermg;
-	PetscTruth	flg;
+	PetscBool	flg;
 	//PetscInt tistart = 0;
 
 	// begin add (xiaolei)
@@ -1361,340 +1361,340 @@ int main(int argc, char **argv)
 	// end add (xiaolei)
 	
 	PetscInitialize(&argc, &argv, (char *)0, help);
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	
 	MPI_Comm_rank(PETSC_COMM_WORLD, &my_rank);
 	srand( time(NULL)) ;	// Seokkoo Kang
 
-	PetscOptionsInsertFile(PETSC_COMM_WORLD, "control.dat", PETSC_TRUE);
+	PetscOptionsInsertFile(PETSC_COMM_WORLD, NULL, "control.dat", PETSC_TRUE);
 	
-	PetscOptionsGetInt(PETSC_NULL, "-tio", &tiout, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-tiou", &tiout_ufield, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-tieu", &tiend_ufield, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-tio", &tiout, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-tiou", &tiout_ufield, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-tieu", &tiend_ufield, NULL);
 
-	PetscOptionsGetInt(PETSC_NULL, "-imm", &immersed, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-inv", &inviscid, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-rstart", &tistart, &rstart_flg);
-	PetscOptionsGetInt(PETSC_NULL, "-imp", &implicit, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-imp_MAX_IT", &imp_MAX_IT, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-fsi", &movefsi, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-rfsi", &rotatefsi, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-radi", &radi, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-inlet", &inletprofile, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-str", &STRONG_COUPLING, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-rs_fsi", &rstart_fsi, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-cop", &cop, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-fish", &fish, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-mhv", &MHV, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-reg", &regime, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-twoD", &TwoD, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-thin", &thin, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-dgf_z", &dgf_z, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-dgf_y", &dgf_y, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-dgf_x", &dgf_x, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-dgf_az", &dgf_az, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-dgf_ay", &dgf_ay, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-dgf_ax", &dgf_ax, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-body", &NumberOfBodies, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-imm", &immersed, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-inv", &inviscid, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-rstart", &tistart, &rstart_flg);
+	PetscOptionsGetInt(NULL, NULL, "-imp", &implicit, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-imp_MAX_IT", &imp_MAX_IT, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-fsi", &movefsi, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-rfsi", &rotatefsi, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-radi", &radi, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-inlet", &inletprofile, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-str", &STRONG_COUPLING, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-rs_fsi", &rstart_fsi, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-cop", &cop, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-fish", &fish, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-mhv", &MHV, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-reg", &regime, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-twoD", &TwoD, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-thin", &thin, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-dgf_z", &dgf_z, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-dgf_y", &dgf_y, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-dgf_x", &dgf_x, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-dgf_az", &dgf_az, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-dgf_ay", &dgf_ay, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-dgf_ax", &dgf_ax, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-body", &NumberOfBodies, NULL);
 
-	PetscOptionsGetInt(PETSC_NULL, "-averaging", &averaging, PETSC_NULL);	// Seokkoo Kang: if 1 do averaging; always begin with -rstart 0
-	PetscOptionsGetInt(PETSC_NULL, "-binary", &binary_input, PETSC_NULL);	// Seokkoo Kang: if 1 binary PLOT3D file, if 0 ascii.
-	PetscOptionsGetInt(PETSC_NULL, "-xyz", &xyz_input, PETSC_NULL);			// Seokkoo Kang: if 1 text xyz format, useful for very big (>1GB) Cartesian grid
-	PetscOptionsGetInt(PETSC_NULL, "-les", &les, PETSC_NULL);				// Seokkoo Kang: if 1 Smagorinsky with Cs=0.1, if 2 Dynamic model
-	PetscOptionsGetInt(PETSC_NULL, "-inlet_buffer_k", &inlet_buffer_k, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-wallfunction", &wallfunction, PETSC_NULL);	// Seokkoo Kang: 1 or 2
-	PetscOptionsGetInt(PETSC_NULL, "-slipbody", &slipbody, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-central", &central, PETSC_NULL);//central differencing
-	PetscOptionsGetInt(PETSC_NULL, "-second_order", &second_order, PETSC_NULL);
-	//PetscOptionsGetInt(PETSC_NULL, "-initialzero", &initialzero, PETSC_NULL);	// Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-freesurface", &freesurface, PETSC_NULL);	// Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-rans", &rans, PETSC_NULL);			// Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-cross_diffusion", &cross_diffusion, PETSC_NULL);                     // Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-lowRe", &lowRe, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-stension", &surface_tension, PETSC_NULL);			// Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-delete", &delete_previous_file, PETSC_NULL);	// Seokkoo Kang: delete previous time step's saved file for saving disk space
-	PetscOptionsGetInt(PETSC_NULL, "-mixed", &mixed, PETSC_NULL);			// Seokkoo Kang: mixed model option for LES
-	PetscOptionsGetInt(PETSC_NULL, "-clark", &clark, PETSC_NULL);			// Seokkoo Kang: mixed model option for LES
-	PetscOptionsGetInt(PETSC_NULL, "-vorticity", &vorticity, PETSC_NULL);			// Seokkoo Kang: vorticity form for viscous terms
-	PetscOptionsGetInt(PETSC_NULL, "-pseudo", &pseudo_periodic, PETSC_NULL);	// Seokkoo Kang: pseudo periodic BC in k-direction for genenration of inflow condition
+	PetscOptionsGetInt(NULL, NULL, "-averaging", &averaging, NULL);	// Seokkoo Kang: if 1 do averaging; always begin with -rstart 0
+	PetscOptionsGetInt(NULL, NULL, "-binary", &binary_input, NULL);	// Seokkoo Kang: if 1 binary PLOT3D file, if 0 ascii.
+	PetscOptionsGetInt(NULL, NULL, "-xyz", &xyz_input, NULL);			// Seokkoo Kang: if 1 text xyz format, useful for very big (>1GB) Cartesian grid
+	PetscOptionsGetInt(NULL, NULL, "-les", &les, NULL);				// Seokkoo Kang: if 1 Smagorinsky with Cs=0.1, if 2 Dynamic model
+	PetscOptionsGetInt(NULL, NULL, "-inlet_buffer_k", &inlet_buffer_k, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-wallfunction", &wallfunction, NULL);	// Seokkoo Kang: 1 or 2
+	PetscOptionsGetInt(NULL, NULL, "-slipbody", &slipbody, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-central", &central, NULL);//central differencing
+	PetscOptionsGetInt(NULL, NULL, "-second_order", &second_order, NULL);
+	//PetscOptionsGetInt(NULL, NULL, "-initialzero", &initialzero, NULL);	// Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-freesurface", &freesurface, NULL);	// Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-rans", &rans, NULL);			// Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-cross_diffusion", &cross_diffusion, NULL);                     // Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-lowRe", &lowRe, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-stension", &surface_tension, NULL);			// Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-delete", &delete_previous_file, NULL);	// Seokkoo Kang: delete previous time step's saved file for saving disk space
+	PetscOptionsGetInt(NULL, NULL, "-mixed", &mixed, NULL);			// Seokkoo Kang: mixed model option for LES
+	PetscOptionsGetInt(NULL, NULL, "-clark", &clark, NULL);			// Seokkoo Kang: mixed model option for LES
+	PetscOptionsGetInt(NULL, NULL, "-vorticity", &vorticity, NULL);			// Seokkoo Kang: vorticity form for viscous terms
+	PetscOptionsGetInt(NULL, NULL, "-pseudo", &pseudo_periodic, NULL);	// Seokkoo Kang: pseudo periodic BC in k-direction for genenration of inflow condition
 
-	PetscOptionsGetInt(PETSC_NULL, "-levelset", &levelset, PETSC_NULL);     // Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-levelset_solve2", &levelset_solve2, PETSC_NULL);     // Seokkoo Kang	
-	PetscOptionsGetInt(PETSC_NULL, "-fix_level", &fix_level, PETSC_NULL);     // Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-levelset_it", &levelset_it, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-levelset", &levelset, NULL);     // Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-levelset_solve2", &levelset_solve2, NULL);     // Seokkoo Kang	
+	PetscOptionsGetInt(NULL, NULL, "-fix_level", &fix_level, NULL);     // Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-levelset_it", &levelset_it, NULL);
 
-	PetscOptionsGetInt(PETSC_NULL, "-rotdir", &rotdir, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-i_periodic", &i_periodic, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-j_periodic", &j_periodic, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-k_periodic", &k_periodic, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-laplacian", &laplacian, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-qcrout", &qcr, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-ii_periodic", &ii_periodic, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-jj_periodic", &jj_periodic, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-kk_periodic", &kk_periodic, PETSC_NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-rotdir", &rotdir, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-i_periodic", &i_periodic, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-j_periodic", &j_periodic, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-k_periodic", &k_periodic, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-laplacian", &laplacian, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-qcrout", &qcr, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-ii_periodic", &ii_periodic, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-jj_periodic", &jj_periodic, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-kk_periodic", &kk_periodic, NULL);	
 	periodic = i_periodic+j_periodic+k_periodic+ii_periodic+jj_periodic+kk_periodic;
-	PetscOptionsGetInt(PETSC_NULL, "-perturb", &initial_perturbation, PETSC_NULL);	// Seokkoo Kang: give a random perturbation for initial condition
-	PetscOptionsGetInt(PETSC_NULL, "-skew", &skew, PETSC_NULL);				// Seokkoo Kang: skew symmetric form of advection term
-	PetscOptionsGetInt(PETSC_NULL, "-dynamic_freq", &dynamic_freq, PETSC_NULL);		// Seokkoo Kang: LES dynamic compute frequency 
+	PetscOptionsGetInt(NULL, NULL, "-perturb", &initial_perturbation, NULL);	// Seokkoo Kang: give a random perturbation for initial condition
+	PetscOptionsGetInt(NULL, NULL, "-skew", &skew, NULL);				// Seokkoo Kang: skew symmetric form of advection term
+	PetscOptionsGetInt(NULL, NULL, "-dynamic_freq", &dynamic_freq, NULL);		// Seokkoo Kang: LES dynamic compute frequency 
 	if(dynamic_freq<1) dynamic_freq=1;
 
-	PetscOptionsGetInt(PETSC_NULL, "-save_inflow", &save_inflow, PETSC_NULL);		// Seokkoo Kang: save infow BC to files; should be used in conjunction wiht -pseudo 1
-	PetscOptionsGetInt(PETSC_NULL, "-save_inflow_period", &save_inflow_period, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-save_inflow_minus", &save_inflow_minus, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-ti_lastsave", &ti_lastsave, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-save_inflow", &save_inflow, NULL);		// Seokkoo Kang: save infow BC to files; should be used in conjunction wiht -pseudo 1
+	PetscOptionsGetInt(NULL, NULL, "-save_inflow_period", &save_inflow_period, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-save_inflow_minus", &save_inflow_minus, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-ti_lastsave", &ti_lastsave, NULL);
 
-	PetscOptionsGetInt(PETSC_NULL, "-localstep", &localstep, PETSC_NULL);		// Seokkoo Kang: localstep ( explict + implicit momentum solver )
-	PetscOptionsGetInt(PETSC_NULL, "-recycle", &inflow_recycle_perioid, PETSC_NULL);	// Seokkoo Kang, set recycling period of the inflow data
-	PetscOptionsGetInt(PETSC_NULL, "-save_memory", &save_memory, PETSC_NULL);	// Seokkoo Kang, save_memory
-	PetscOptionsGetInt(PETSC_NULL, "-ibm_search", &ibm_search, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-ip", &i_proc, PETSC_NULL);			// Seokkoo Kang: number of processors in i direction
-	PetscOptionsGetInt(PETSC_NULL, "-jp", &j_proc, PETSC_NULL);			// Seokkoo Kang: number of processors in j direction
-	PetscOptionsGetInt(PETSC_NULL, "-kp", &k_proc, PETSC_NULL);			// Seokkoo Kang: number of processors in k direction
-	PetscOptionsGetInt(PETSC_NULL, "-poisson", &poisson, PETSC_NULL); 	// Seokkoo Kang
-	PetscOptionsGetInt(PETSC_NULL, "-amg_agg", &amg_agg, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-testfilter_ik", &testfilter_ik, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-testfilter_1d", &testfilter_1d, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-poisson_it", &poisson_it, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-i_homo_filter", &i_homo_filter, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-j_homo_filter", &j_homo_filter, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-k_homo_filter", &k_homo_filter, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-fix_outlet", &fix_outlet, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-fix_inlet", &fix_inlet, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-localstep", &localstep, NULL);		// Seokkoo Kang: localstep ( explict + implicit momentum solver )
+	PetscOptionsGetInt(NULL, NULL, "-recycle", &inflow_recycle_perioid, NULL);	// Seokkoo Kang, set recycling period of the inflow data
+	PetscOptionsGetInt(NULL, NULL, "-save_memory", &save_memory, NULL);	// Seokkoo Kang, save_memory
+	PetscOptionsGetInt(NULL, NULL, "-ibm_search", &ibm_search, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-ip", &i_proc, NULL);			// Seokkoo Kang: number of processors in i direction
+	PetscOptionsGetInt(NULL, NULL, "-jp", &j_proc, NULL);			// Seokkoo Kang: number of processors in j direction
+	PetscOptionsGetInt(NULL, NULL, "-kp", &k_proc, NULL);			// Seokkoo Kang: number of processors in k direction
+	PetscOptionsGetInt(NULL, NULL, "-poisson", &poisson, NULL); 	// Seokkoo Kang
+	PetscOptionsGetInt(NULL, NULL, "-amg_agg", &amg_agg, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-testfilter_ik", &testfilter_ik, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-testfilter_1d", &testfilter_1d, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-poisson_it", &poisson_it, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-i_homo_filter", &i_homo_filter, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-j_homo_filter", &j_homo_filter, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-k_homo_filter", &k_homo_filter, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-fix_outlet", &fix_outlet, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-fix_inlet", &fix_inlet, NULL);
 	
 	// add (Toni)
 	//for levelset
-	PetscOptionsGetInt(PETSC_NULL, "-levelset_it", &levelset_it, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-levelset_tau", &levelset_tau, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-level_in_height", &level_in_height, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-level_in", &level_in, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-sloshing", &sloshing, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-levelset_weno", &levelset_weno, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-export_FS_elev_center", &export_FS_elev_center, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-export_FS_elev", &export_FS_elev, PETSC_NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-levelset_it", &levelset_it, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-levelset_tau", &levelset_tau, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-level_in_height", &level_in_height, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-level_in", &level_in, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-sloshing", &sloshing, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-levelset_weno", &levelset_weno, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-export_FS_elev_center", &export_FS_elev_center, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-export_FS_elev", &export_FS_elev, NULL);	
 	
 	//for IB FSI
-	PetscOptionsGetInt(PETSC_NULL, "-forced_motion", &forced_motion, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-fall_cyll_case", &fall_cyll_case, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-fsi_6dof", &fsi_6dof, PETSC_NULL);	
-	PetscOptionsGetReal(PETSC_NULL, "-body_mass", &body_mass, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_inertia_x", &body_inertia_x, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_inertia_y", &body_inertia_y, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_inertia_z", &body_inertia_z, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_alpha_rot_x", &body_alpha_rot_x, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_alpha_rot_y", &body_alpha_rot_y, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_alpha_rot_z", &body_alpha_rot_z, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_alpha_lin_x", &body_alpha_lin_x, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_alpha_lin_y", &body_alpha_lin_y, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_alpha_lin_z", &body_alpha_lin_z, PETSC_NULL);	
-	PetscOptionsGetReal(PETSC_NULL, "-body_beta_rot_x", &body_beta_rot_x, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_beta_rot_y", &body_beta_rot_y, PETSC_NULL);	
-	PetscOptionsGetReal(PETSC_NULL, "-body_beta_rot_z", &body_beta_rot_z, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_beta_lin_x", &body_beta_lin_x, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-body_beta_lin_y", &body_beta_lin_y, PETSC_NULL);	
-	PetscOptionsGetReal(PETSC_NULL, "-body_beta_lin_z", &body_beta_lin_z, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-angle_x0", &(angle_x0), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-angle_y0", &(angle_y0), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-angle_z0", &(angle_z0), PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-forced_motion", &forced_motion, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-fall_cyll_case", &fall_cyll_case, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-fsi_6dof", &fsi_6dof, NULL);	
+	PetscOptionsGetReal(NULL, NULL, "-body_mass", &body_mass, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_inertia_x", &body_inertia_x, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_inertia_y", &body_inertia_y, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_inertia_z", &body_inertia_z, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_alpha_rot_x", &body_alpha_rot_x, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_alpha_rot_y", &body_alpha_rot_y, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_alpha_rot_z", &body_alpha_rot_z, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_alpha_lin_x", &body_alpha_lin_x, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_alpha_lin_y", &body_alpha_lin_y, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_alpha_lin_z", &body_alpha_lin_z, NULL);	
+	PetscOptionsGetReal(NULL, NULL, "-body_beta_rot_x", &body_beta_rot_x, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_beta_rot_y", &body_beta_rot_y, NULL);	
+	PetscOptionsGetReal(NULL, NULL, "-body_beta_rot_z", &body_beta_rot_z, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_beta_lin_x", &body_beta_lin_x, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-body_beta_lin_y", &body_beta_lin_y, NULL);	
+	PetscOptionsGetReal(NULL, NULL, "-body_beta_lin_z", &body_beta_lin_z, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-angle_x0", &(angle_x0), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-angle_y0", &(angle_y0), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-angle_z0", &(angle_z0), NULL);
 
 	//Variables for wave_momentum_source
-	PetscOptionsGetInt(PETSC_NULL, "-wave_momentum_source", &wave_momentum_source, PETSC_NULL); //For momentum source 1 in x direction and 2 both directions
-	PetscOptionsGetInt(PETSC_NULL, "-wave_sponge_layer", &wave_sponge_layer, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_sponge_zs", &wave_sponge_zs, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_sponge_z01", &wave_sponge_z01, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_sponge_z02", &wave_sponge_z02, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_sponge_xs", &wave_sponge_xs, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_sponge_x01", &wave_sponge_x01, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_sponge_x02", &wave_sponge_x02, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_angle_single", &wave_angle_single, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_K_single", &wave_K_single, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_depth", &wave_depth, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_a_single", &wave_a_single, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_wind_reflength", &wave_wind_reflength, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_wind_refvel", &wave_wind_refvel, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-wave_wind_yshift", &wave_wind_yshift, PETSC_NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-wave_momentum_source", &wave_momentum_source, NULL); //For momentum source 1 in x direction and 2 both directions
+	PetscOptionsGetInt(NULL, NULL, "-wave_sponge_layer", &wave_sponge_layer, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_sponge_zs", &wave_sponge_zs, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_sponge_z01", &wave_sponge_z01, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_sponge_z02", &wave_sponge_z02, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_sponge_xs", &wave_sponge_xs, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_sponge_x01", &wave_sponge_x01, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_sponge_x02", &wave_sponge_x02, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_angle_single", &wave_angle_single, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_K_single", &wave_K_single, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_depth", &wave_depth, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_a_single", &wave_a_single, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_wind_reflength", &wave_wind_reflength, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_wind_refvel", &wave_wind_refvel, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-wave_wind_yshift", &wave_wind_yshift, NULL);	
 	//for air_flow_levelset
-	PetscOptionsGetInt(PETSC_NULL, "-air_flow_levelset", &air_flow_levelset, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-air_flow_levelset_periodic", &air_flow_levelset_periodic, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-wave_average_k", &wave_average_k, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-wave_skip", &wave_skip, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-wave_ti_start", &wave_ti_start, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-wind_skip", &wind_skip, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-wind_start_read", &wind_start_read, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-wave_start_read", &wave_start_read, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-wind_recicle", &wind_recicle, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-wave_recicle", &wave_recicle, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-wave_k_ave", &wave_k_ave, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-wave_i_ave", &wave_i_ave, PETSC_NULL);	
-	PetscOptionsGetInt(PETSC_NULL, "-wave_ti_startave", &wave_ti_startave, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-freesurface_wallmodel", &freesurface_wallmodel, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-viscosity_wallmodel", &viscosity_wallmodel, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-channel_height", &channel_height, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-floating_turbine_case", &floating_turbine_case, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-air_flow_levelset", &air_flow_levelset, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-air_flow_levelset_periodic", &air_flow_levelset_periodic, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-wave_average_k", &wave_average_k, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-wave_skip", &wave_skip, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-wave_ti_start", &wave_ti_start, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-wind_skip", &wind_skip, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-wind_start_read", &wind_start_read, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-wave_start_read", &wave_start_read, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-wind_recicle", &wind_recicle, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-wave_recicle", &wave_recicle, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-wave_k_ave", &wave_k_ave, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-wave_i_ave", &wave_i_ave, NULL);	
+	PetscOptionsGetInt(NULL, NULL, "-wave_ti_startave", &wave_ti_startave, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-freesurface_wallmodel", &freesurface_wallmodel, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-viscosity_wallmodel", &viscosity_wallmodel, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-channel_height", &channel_height, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-floating_turbine_case", &floating_turbine_case, NULL);
 	//End variables for wave_momentum_source
 	// End (Toni)	
 	
 	// add begin (xiaolei)
-	PetscOptionsGetInt(PETSC_NULL, "-forcewidthfixed", &forcewidthfixed, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetReal(PETSC_NULL, "-dhi_fixed", &dhi_fixed, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetReal(PETSC_NULL, "-dhj_fixed", &dhj_fixed, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetReal(PETSC_NULL, "-dhk_fixed", &dhk_fixed, PETSC_NULL); // xyang 6-3-2011
+	PetscOptionsGetInt(NULL, NULL, "-forcewidthfixed", &forcewidthfixed, NULL); // xyang 6-3-2011
+	PetscOptionsGetReal(NULL, NULL, "-dhi_fixed", &dhi_fixed, NULL); // xyang 6-3-2011
+	PetscOptionsGetReal(NULL, NULL, "-dhj_fixed", &dhj_fixed, NULL); // xyang 6-3-2011
+	PetscOptionsGetReal(NULL, NULL, "-dhk_fixed", &dhk_fixed, NULL); // xyang 6-3-2011
 	if(forcewidthfixed) {
 		PetscPrintf(PETSC_COMM_WORLD, "\n Actuator model: the width for force distribution is fixed at dhi=%le dhj=%le dhk=%le \n\n", dhi_fixed, dhj_fixed, dhj_fixed);
 	}
-	PetscOptionsGetInt(PETSC_NULL, "-temperature_rotormodel", &temperature_rotormodel, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetReal(PETSC_NULL, "-tmprt_initval", &tmprt_initval, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-u_settling", &u_settling, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-v_settling", &v_settling, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-w_settling", &w_settling, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-fractional_Max_IT", &fractional_Max_IT, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-wallmodel_test", &wallmodel_test, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-dp_wm", &dp_wm, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-alfa_wm", &alfa_wm, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-forceavgperiod_AL", &forceavgperiod_AL, PETSC_NULL); // xyang 12-7-2010
-	PetscOptionsGetInt(PETSC_NULL, "-rotor_modeled", &rotor_model, PETSC_NULL); // xyang 12-7-2010
-	PetscOptionsGetInt(PETSC_NULL, "-rotate_IBdelta", &rotate_IBdelta, PETSC_NULL); // xyang 12-7-2010
-	PetscOptionsGetInt(PETSC_NULL, "-rotate_nacelle", &rotate_nacelle, PETSC_NULL); // xyang 12-7-2010
-	PetscOptionsGetInt(PETSC_NULL, "-nacelle_model", &nacelle_model, PETSC_NULL); // xyang 12-7-2010
-	PetscOptionsGetReal(PETSC_NULL, "-indf_ax", &indf_ax, PETSC_NULL); // xyang 12-16-2010
-	PetscOptionsGetReal(PETSC_NULL, "-percent_weno", &percent_weno, PETSC_NULL); // xyang 12-16-2010
-	PetscOptionsGetInt(PETSC_NULL, "-imin_wm", &imin_wm, PETSC_NULL); // xyang 1-11-2011
-	PetscOptionsGetInt(PETSC_NULL, "-imax_wm", &imax_wm, PETSC_NULL); // xyang 1-11-2011
-	PetscOptionsGetInt(PETSC_NULL, "-jmin_wm", &jmin_wm, PETSC_NULL); // xyang 1-11-2011
-	PetscOptionsGetInt(PETSC_NULL, "-jmax_wm", &jmax_wm, PETSC_NULL); // xyang 1-11-2011
-	PetscOptionsGetInt(PETSC_NULL, "-kmin_wm", &kmin_wm, PETSC_NULL); // xyang 1-11-2011
-	PetscOptionsGetInt(PETSC_NULL, "-kmax_wm", &kmax_wm, PETSC_NULL); // xyang 1-11-2011
-	PetscOptionsGetInt(PETSC_NULL, "-imin_wmtmprt", &imin_wmtmprt, PETSC_NULL); // xyang 10-22-2012
-	PetscOptionsGetInt(PETSC_NULL, "-imax_wmtmprt", &imax_wmtmprt, PETSC_NULL); // xyang 10-22-2012
-	PetscOptionsGetInt(PETSC_NULL, "-jmin_wmtmprt", &jmin_wmtmprt, PETSC_NULL); // xyang 10-22-2012
-	PetscOptionsGetInt(PETSC_NULL, "-jmax_wmtmprt", &jmax_wmtmprt, PETSC_NULL); // xyang 10-22-2012
-	PetscOptionsGetInt(PETSC_NULL, "-kmin_wmtmprt", &kmin_wmtmprt, PETSC_NULL); // xyang 10-22-2012
-	PetscOptionsGetInt(PETSC_NULL, "-kmax_wmtmprt", &kmax_wmtmprt, PETSC_NULL); // xyang 10-22-2012
-	PetscOptionsGetInt(PETSC_NULL, "-surface_p_out", &surface_p_out, PETSC_NULL); // xyang 3-2-2011
-	PetscOptionsGetInt(PETSC_NULL, "-num_blade", &num_blade, PETSC_NULL); // xyang 3-2-2011
-	PetscOptionsGetInt(PETSC_NULL, "-num_foiltype", &num_foiltype, PETSC_NULL); // xyang 3-18-2011
-	PetscOptionsGetReal(PETSC_NULL, "-dh1_wm", &dh1_wm, PETSC_NULL); //xyang 4-11-2011
-	PetscOptionsGetReal(PETSC_NULL, "-dhratio_wm", &dhratio_wm, PETSC_NULL); //xyang 4-11-2011
-	PetscOptionsGetInt(PETSC_NULL, "-IB_delta", &IB_delta, PETSC_NULL); // xyang 3-18-2011
-	PetscOptionsGetInt(PETSC_NULL, "-NumIBPerLoc", &NumIBPerLoc, PETSC_NULL); // xyang 3-18-2011
-	PetscOptionsGetInt(PETSC_NULL, "-NumNacellePerLoc", &NumNacellePerLoc, PETSC_NULL); // xyang 3-18-2011
-	PetscOptionsGetReal(PETSC_NULL, "-reflength_wt", &reflength_wt, PETSC_NULL); // xyang 12-16-2010
-	PetscOptionsGetReal(PETSC_NULL, "-reflength_nacelle", &reflength_nacelle, PETSC_NULL); // xyang 12-16-2010
-	PetscOptionsGetReal(PETSC_NULL, "-refvel_wt", &refvel_wt, PETSC_NULL); // xyang 12-16-2010
-	PetscOptionsGetReal(PETSC_NULL, "-refvel_cfd", &refvel_cfd, PETSC_NULL); // xyang 12-16-2010
-	PetscOptionsGetReal(PETSC_NULL, "-reflength_IBDelta", &reflength_IBDelta, PETSC_NULL); // xyang 12-16-2010
-	PetscOptionsGetReal(PETSC_NULL, "-tipspeedratio", &tipspeedratio, PETSC_NULL); // xyang 2-12-2012
-	PetscOptionsGetReal(PETSC_NULL, "-r_nacelle", &r_nacelle, PETSC_NULL); // xyang 2-12-2012
-	PetscOptionsGetReal(PETSC_NULL, "-L_nacelle", &L_nacelle, PETSC_NULL); // xyang 2-12-2012
-	PetscOptionsGetReal(PETSC_NULL, "-dh_nacelle", &dh_nacelle, PETSC_NULL); // xyang 2-12-2012
-	PetscOptionsGetReal(PETSC_NULL, "-loc_refvel", &loc_refvel, PETSC_NULL); // xyang 2-12-2012
-	PetscOptionsGetReal(PETSC_NULL, "-X_control", &X_control, PETSC_NULL); // xyang 2-12-2012
-	PetscOptionsGetInt(PETSC_NULL, "-IB_wm", &IB_wm, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetInt(PETSC_NULL, "-IB_wmtmprt", &IB_wmtmprt, PETSC_NULL); // xyang 10-22-2012
-	PetscOptionsGetInt(PETSC_NULL, "-temperature", &temperature, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetInt(PETSC_NULL, "-deltafunc", &deltafunc, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetReal(PETSC_NULL, "-prt_eps", &prt_eps, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-halfwidth_dfunc", &halfwidth_dfunc, PETSC_NULL); 
-	PetscOptionsGetInt(PETSC_NULL, "-i_periodicIB", &i_periodicIB, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetInt(PETSC_NULL, "-j_periodicIB", &j_periodicIB, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetInt(PETSC_NULL, "-k_periodicIB", &k_periodicIB, PETSC_NULL); // xyang 6-3-2011
-	PetscOptionsGetInt(PETSC_NULL, "-Force_wm", &Force_wm, PETSC_NULL); // xyang 10-24-2012
-	PetscOptionsGetInt(PETSC_NULL, "-Shear_wm", &Shear_wm, PETSC_NULL); // xyang 10-24-2012
-	PetscOptionsGetInt(PETSC_NULL, "-Vel_wm", &Vel_wm, PETSC_NULL); // xyang 10-24-2012
-	PetscOptionsGetInt(PETSC_NULL, "-add_fluc", &add_fluctuations, PETSC_NULL); // xyang 11-03-2011
-	PetscOptionsGetInt(PETSC_NULL, "-add_fluc_tmprt", &add_fluctuations_tmprt, PETSC_NULL); // xyang 11-03-2011
-	PetscOptionsGetInt(PETSC_NULL, "-les_prt", &les_prt, PETSC_NULL); // xyang 11-03-2011
-	PetscOptionsGetInt(PETSC_NULL, "-infRe", &infRe, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-MoveFrame", &MoveFrame, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-u_frame", &u_frame, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-v_frame", &v_frame, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-w_frame", &w_frame, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-C_iww", &C_iww, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-a_iww", &a_iww, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-lamda_iww", &lamda_iww, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-xmin", &xmin, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-xmax", &xmax, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-ymin", &ymin, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-ymax", &ymax, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-zmin", &zmin, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-zmax", &zmax, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-ii_periodicWT", &ii_periodicWT, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-jj_periodicWT", &jj_periodicWT, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-kk_periodicWT", &kk_periodicWT, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-Nx_WT", &Nx_WT, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-Ny_WT", &Ny_WT, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-Nz_WT", &Nz_WT, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-Sx_WT", &Sx_WT, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-Sy_WT", &Sy_WT, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-Sz_WT", &Sz_WT, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-New_wallmodel", &New_wallmodel, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-turbine", &NumberOfTurbines, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-NumberOfIBDelta", &NumberOfIBDelta, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-NumberOfNacelle", &NumberOfNacelle, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-SpongeLayer", &SpongeLayer, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-SpongeDistance", &SpongeDistance, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-MoveCylinderTest", &MoveCylinderTest, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-inflow_levelset", &inflow_levelset, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-sublevel", &sublevel, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-smoothlevel", &smoothlevel, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-dfunc_wd", &dfunc_wd, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-FixTipSpeedRatio", &FixTipSpeedRatio, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-rstart_turbinerotation", &rstart_turbinerotation, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-turbinetorquecontrol", &turbinetorquecontrol, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-turbine_prescrived_motion", &turbine_prescrived_motion, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-turbine_6dof_fsi_motion", &turbine_6dof_fsi_motion, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-turbine_prescrived_motion_heave", &turbine_prescrived_motion_heave, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-turbine_prescrived_motion_pitch", &turbine_prescrived_motion_pitch, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-fixturbineangvel", &fixturbineangvel, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-fixturbinegeneratortorque", &fixturbinegeneratortorque, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-Shen_AL", &Shen_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-correction3D_CH", &correction3D_CH, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-correction3D_CL", &correction3D_CL, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-smoothforce_AL", &smoothforce_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-radialforce_AL", &radialforce_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-AL_Noslip", &AL_Noslip, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-Shen1_AL", &Shen1_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-correction_ALShen1", &correction_ALShen1, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-relax_AL", &relax_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-cf_radialforce_AL", &cf_radialforce_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-c0_CL", &c0_CL, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-c1_CH", &c1_CH, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-c2_CH", &c2_CH, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-c3_CH", &c3_CH, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-a_shen", &a_shen, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-b_shen", &b_shen, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-c_shen", &c_shen, PETSC_NULL);  // xyang
-	PetscOptionsGetInt(PETSC_NULL, "-Prandtl_AL", &Prandtl_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-refangle_AL", &refangle_AL, PETSC_NULL);  // xyang
-	PetscOptionsGetReal(PETSC_NULL, "-dt_bed", &dt_bed, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-particle_dens", &particle_dens, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-particle_D50", &particle_D50, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-smooth_bed", &smooth_bed, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-bed_avg", &bed_avg, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-particlevel_model", &particlevel_model, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-LS_bedConstr", &LS_bedConstr, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-Angle_repose", &Angle_repose, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-temperature_rotormodel", &temperature_rotormodel, NULL); // xyang 6-3-2011
+	PetscOptionsGetReal(NULL, NULL, "-tmprt_initval", &tmprt_initval, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-u_settling", &u_settling, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-v_settling", &v_settling, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-w_settling", &w_settling, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-fractional_Max_IT", &fractional_Max_IT, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-wallmodel_test", &wallmodel_test, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-dp_wm", &dp_wm, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-alfa_wm", &alfa_wm, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-forceavgperiod_AL", &forceavgperiod_AL, NULL); // xyang 12-7-2010
+	PetscOptionsGetInt(NULL, NULL, "-rotor_modeled", &rotor_model, NULL); // xyang 12-7-2010
+	PetscOptionsGetInt(NULL, NULL, "-rotate_IBdelta", &rotate_IBdelta, NULL); // xyang 12-7-2010
+	PetscOptionsGetInt(NULL, NULL, "-rotate_nacelle", &rotate_nacelle, NULL); // xyang 12-7-2010
+	PetscOptionsGetInt(NULL, NULL, "-nacelle_model", &nacelle_model, NULL); // xyang 12-7-2010
+	PetscOptionsGetReal(NULL, NULL, "-indf_ax", &indf_ax, NULL); // xyang 12-16-2010
+	PetscOptionsGetReal(NULL, NULL, "-percent_weno", &percent_weno, NULL); // xyang 12-16-2010
+	PetscOptionsGetInt(NULL, NULL, "-imin_wm", &imin_wm, NULL); // xyang 1-11-2011
+	PetscOptionsGetInt(NULL, NULL, "-imax_wm", &imax_wm, NULL); // xyang 1-11-2011
+	PetscOptionsGetInt(NULL, NULL, "-jmin_wm", &jmin_wm, NULL); // xyang 1-11-2011
+	PetscOptionsGetInt(NULL, NULL, "-jmax_wm", &jmax_wm, NULL); // xyang 1-11-2011
+	PetscOptionsGetInt(NULL, NULL, "-kmin_wm", &kmin_wm, NULL); // xyang 1-11-2011
+	PetscOptionsGetInt(NULL, NULL, "-kmax_wm", &kmax_wm, NULL); // xyang 1-11-2011
+	PetscOptionsGetInt(NULL, NULL, "-imin_wmtmprt", &imin_wmtmprt, NULL); // xyang 10-22-2012
+	PetscOptionsGetInt(NULL, NULL, "-imax_wmtmprt", &imax_wmtmprt, NULL); // xyang 10-22-2012
+	PetscOptionsGetInt(NULL, NULL, "-jmin_wmtmprt", &jmin_wmtmprt, NULL); // xyang 10-22-2012
+	PetscOptionsGetInt(NULL, NULL, "-jmax_wmtmprt", &jmax_wmtmprt, NULL); // xyang 10-22-2012
+	PetscOptionsGetInt(NULL, NULL, "-kmin_wmtmprt", &kmin_wmtmprt, NULL); // xyang 10-22-2012
+	PetscOptionsGetInt(NULL, NULL, "-kmax_wmtmprt", &kmax_wmtmprt, NULL); // xyang 10-22-2012
+	PetscOptionsGetInt(NULL, NULL, "-surface_p_out", &surface_p_out, NULL); // xyang 3-2-2011
+	PetscOptionsGetInt(NULL, NULL, "-num_blade", &num_blade, NULL); // xyang 3-2-2011
+	PetscOptionsGetInt(NULL, NULL, "-num_foiltype", &num_foiltype, NULL); // xyang 3-18-2011
+	PetscOptionsGetReal(NULL, NULL, "-dh1_wm", &dh1_wm, NULL); //xyang 4-11-2011
+	PetscOptionsGetReal(NULL, NULL, "-dhratio_wm", &dhratio_wm, NULL); //xyang 4-11-2011
+	PetscOptionsGetInt(NULL, NULL, "-IB_delta", &IB_delta, NULL); // xyang 3-18-2011
+	PetscOptionsGetInt(NULL, NULL, "-NumIBPerLoc", &NumIBPerLoc, NULL); // xyang 3-18-2011
+	PetscOptionsGetInt(NULL, NULL, "-NumNacellePerLoc", &NumNacellePerLoc, NULL); // xyang 3-18-2011
+	PetscOptionsGetReal(NULL, NULL, "-reflength_wt", &reflength_wt, NULL); // xyang 12-16-2010
+	PetscOptionsGetReal(NULL, NULL, "-reflength_nacelle", &reflength_nacelle, NULL); // xyang 12-16-2010
+	PetscOptionsGetReal(NULL, NULL, "-refvel_wt", &refvel_wt, NULL); // xyang 12-16-2010
+	PetscOptionsGetReal(NULL, NULL, "-refvel_cfd", &refvel_cfd, NULL); // xyang 12-16-2010
+	PetscOptionsGetReal(NULL, NULL, "-reflength_IBDelta", &reflength_IBDelta, NULL); // xyang 12-16-2010
+	PetscOptionsGetReal(NULL, NULL, "-tipspeedratio", &tipspeedratio, NULL); // xyang 2-12-2012
+	PetscOptionsGetReal(NULL, NULL, "-r_nacelle", &r_nacelle, NULL); // xyang 2-12-2012
+	PetscOptionsGetReal(NULL, NULL, "-L_nacelle", &L_nacelle, NULL); // xyang 2-12-2012
+	PetscOptionsGetReal(NULL, NULL, "-dh_nacelle", &dh_nacelle, NULL); // xyang 2-12-2012
+	PetscOptionsGetReal(NULL, NULL, "-loc_refvel", &loc_refvel, NULL); // xyang 2-12-2012
+	PetscOptionsGetReal(NULL, NULL, "-X_control", &X_control, NULL); // xyang 2-12-2012
+	PetscOptionsGetInt(NULL, NULL, "-IB_wm", &IB_wm, NULL); // xyang 6-3-2011
+	PetscOptionsGetInt(NULL, NULL, "-IB_wmtmprt", &IB_wmtmprt, NULL); // xyang 10-22-2012
+	PetscOptionsGetInt(NULL, NULL, "-temperature", &temperature, NULL); // xyang 6-3-2011
+	PetscOptionsGetInt(NULL, NULL, "-deltafunc", &deltafunc, NULL); // xyang 6-3-2011
+	PetscOptionsGetReal(NULL, NULL, "-prt_eps", &prt_eps, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-halfwidth_dfunc", &halfwidth_dfunc, NULL); 
+	PetscOptionsGetInt(NULL, NULL, "-i_periodicIB", &i_periodicIB, NULL); // xyang 6-3-2011
+	PetscOptionsGetInt(NULL, NULL, "-j_periodicIB", &j_periodicIB, NULL); // xyang 6-3-2011
+	PetscOptionsGetInt(NULL, NULL, "-k_periodicIB", &k_periodicIB, NULL); // xyang 6-3-2011
+	PetscOptionsGetInt(NULL, NULL, "-Force_wm", &Force_wm, NULL); // xyang 10-24-2012
+	PetscOptionsGetInt(NULL, NULL, "-Shear_wm", &Shear_wm, NULL); // xyang 10-24-2012
+	PetscOptionsGetInt(NULL, NULL, "-Vel_wm", &Vel_wm, NULL); // xyang 10-24-2012
+	PetscOptionsGetInt(NULL, NULL, "-add_fluc", &add_fluctuations, NULL); // xyang 11-03-2011
+	PetscOptionsGetInt(NULL, NULL, "-add_fluc_tmprt", &add_fluctuations_tmprt, NULL); // xyang 11-03-2011
+	PetscOptionsGetInt(NULL, NULL, "-les_prt", &les_prt, NULL); // xyang 11-03-2011
+	PetscOptionsGetInt(NULL, NULL, "-infRe", &infRe, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-MoveFrame", &MoveFrame, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-u_frame", &u_frame, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-v_frame", &v_frame, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-w_frame", &w_frame, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-C_iww", &C_iww, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-a_iww", &a_iww, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-lamda_iww", &lamda_iww, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-xmin", &xmin, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-xmax", &xmax, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-ymin", &ymin, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-ymax", &ymax, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-zmin", &zmin, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-zmax", &zmax, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-ii_periodicWT", &ii_periodicWT, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-jj_periodicWT", &jj_periodicWT, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-kk_periodicWT", &kk_periodicWT, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-Nx_WT", &Nx_WT, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-Ny_WT", &Ny_WT, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-Nz_WT", &Nz_WT, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-Sx_WT", &Sx_WT, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-Sy_WT", &Sy_WT, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-Sz_WT", &Sz_WT, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-New_wallmodel", &New_wallmodel, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-turbine", &NumberOfTurbines, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-NumberOfIBDelta", &NumberOfIBDelta, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-NumberOfNacelle", &NumberOfNacelle, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-SpongeLayer", &SpongeLayer, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-SpongeDistance", &SpongeDistance, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-MoveCylinderTest", &MoveCylinderTest, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-inflow_levelset", &inflow_levelset, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-sublevel", &sublevel, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-smoothlevel", &smoothlevel, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-dfunc_wd", &dfunc_wd, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-FixTipSpeedRatio", &FixTipSpeedRatio, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-rstart_turbinerotation", &rstart_turbinerotation, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-turbinetorquecontrol", &turbinetorquecontrol, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-turbine_prescrived_motion", &turbine_prescrived_motion, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-turbine_6dof_fsi_motion", &turbine_6dof_fsi_motion, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-turbine_prescrived_motion_heave", &turbine_prescrived_motion_heave, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-turbine_prescrived_motion_pitch", &turbine_prescrived_motion_pitch, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-fixturbineangvel", &fixturbineangvel, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-fixturbinegeneratortorque", &fixturbinegeneratortorque, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-Shen_AL", &Shen_AL, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-correction3D_CH", &correction3D_CH, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-correction3D_CL", &correction3D_CL, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-smoothforce_AL", &smoothforce_AL, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-radialforce_AL", &radialforce_AL, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-AL_Noslip", &AL_Noslip, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-Shen1_AL", &Shen1_AL, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-correction_ALShen1", &correction_ALShen1, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-relax_AL", &relax_AL, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-cf_radialforce_AL", &cf_radialforce_AL, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-c0_CL", &c0_CL, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-c1_CH", &c1_CH, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-c2_CH", &c2_CH, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-c3_CH", &c3_CH, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-a_shen", &a_shen, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-b_shen", &b_shen, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-c_shen", &c_shen, NULL);  // xyang
+	PetscOptionsGetInt(NULL, NULL, "-Prandtl_AL", &Prandtl_AL, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-refangle_AL", &refangle_AL, NULL);  // xyang
+	PetscOptionsGetReal(NULL, NULL, "-dt_bed", &dt_bed, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-particle_dens", &particle_dens, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-particle_D50", &particle_D50, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-smooth_bed", &smooth_bed, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-bed_avg", &bed_avg, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-particlevel_model", &particlevel_model, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-LS_bedConstr", &LS_bedConstr, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-Angle_repose", &Angle_repose, NULL);
 	Angle_repose	  *= M_PI;
 	Angle_repose	  /= 180.;
-	PetscOptionsGetReal(PETSC_NULL, "-bed_porosity", &bed_porosity, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-sb_bed", &sb_bed, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-number_smooth", &number_smooth, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-deltab", &deltab, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-rs_bed", &rs_bed, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-bed_porosity", &bed_porosity, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-sb_bed", &sb_bed, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-number_smooth", &number_smooth, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-deltab", &deltab, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-rs_bed", &rs_bed, NULL);
 	// FSI
-	PetscOptionsGetInt(PETSC_NULL, "-powerlawwallmodel", &powerlawwallmodel, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-prescribed_rotation", &prescribed_rotation, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-scale_velocity", &scale_velocity, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-powerlawwallmodel", &powerlawwallmodel, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-prescribed_rotation", &prescribed_rotation, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-scale_velocity", &scale_velocity, NULL);
 	// add end (xiaolei)
 	
 	if(movefsi || rotatefsi) save_memory=0;
 	sprintf(path, ".");
-	PetscOptionsGetString(PETSC_NULL,"-path", path, 256, PETSC_NULL);		//  Seokkoo Kang: path for saving output; grid.dat, bcs,dat should be put there, but control.dat should exist in the current directory where job is submitted
+	PetscOptionsGetString(NULL, NULL, "-path", path, 256, NULL);		//  Seokkoo Kang: path for saving output; grid.dat, bcs,dat should be put there, but control.dat should exist in the current directory where job is submitted
 	
 	sprintf(gridfile, "grid.dat");
-	PetscOptionsGetString(PETSC_NULL,"-grid", gridfile, 256, PETSC_NULL);	//  Seokkoo Kang: the name of the grid file other than grid.dat if you want
+	PetscOptionsGetString(NULL, NULL, "-grid", gridfile, 256, NULL);	//  Seokkoo Kang: the name of the grid file other than grid.dat if you want
 
 	sprintf(path_inflow, "./inflow");
-	PetscOptionsGetString(PETSC_NULL,"-path_inflow", path_inflow, 256, PETSC_NULL);         //  Xiaolei Yang: path for inflow field
+	PetscOptionsGetString(NULL, NULL, "-path_inflow", path_inflow, 256, NULL);         //  Xiaolei Yang: path for inflow field
 
 	int len=strlen(path);
 	if(path[len-1]=='/') path[len-1]=0;
@@ -1724,47 +1724,47 @@ int main(int argc, char **argv)
 	if(k_periodic) PetscPrintf(PETSC_COMM_WORLD, "\nK-Periodic \n");
 	if(kk_periodic) PetscPrintf(PETSC_COMM_WORLD, "\nKK-Periodic \n");
  
-	//PetscOptionsGetReal(PETSC_NULL, "-Fr", &Fr, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-max_cs", &max_cs, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-flux", &inlet_flux, PETSC_NULL);			// Seokkoo Kang: the amount of inlet flux, if not set mean bulk velocity is set to 1
-	PetscOptionsGetReal(PETSC_NULL, "-imp_tol", &imp_free_tol, PETSC_NULL);		// Seokkoo Kang: tolerance of implicit matrix free solver. 1.e-4 is enough for most cases.
-	PetscOptionsGetReal(PETSC_NULL, "-poisson_tol", &poisson_tol, PETSC_NULL);		// Seokkoo Kang: tolerance of implicit matrix free solver. 1.e-4 is enough for most cases.
-	PetscOptionsGetReal(PETSC_NULL, "-les_eps", &les_eps, PETSC_NULL);		// Seokkoo Kang: small value for preventing very large Cs values in les>1
-	PetscOptionsGetReal(PETSC_NULL, "-dpdz", &mean_pressure_gradient, &dpdz_set);		// Seokkoo Kang: tolerance of implicit matrix free solver. 1.e-4 is enough for most cases.
-	PetscOptionsGetReal(PETSC_NULL, "-roughness", &roughness_size, &rough_set);	// Seokkoo Kang: roughness_size
-	PetscOptionsGetReal(PETSC_NULL, "-amg_thresh", &amg_thresh, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-rho0", &rho_water, PETSC_NULL);	
-	PetscOptionsGetReal(PETSC_NULL, "-rho1", &rho_air, PETSC_NULL);		
-	PetscOptionsGetReal(PETSC_NULL, "-mu0", &mu_water, PETSC_NULL);	
-	PetscOptionsGetReal(PETSC_NULL, "-mu1", &mu_air, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-dthick", &dthick, &dthick_set);
+	//PetscOptionsGetReal(NULL, NULL, "-Fr", &Fr, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-max_cs", &max_cs, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-flux", &inlet_flux, NULL);			// Seokkoo Kang: the amount of inlet flux, if not set mean bulk velocity is set to 1
+	PetscOptionsGetReal(NULL, NULL, "-imp_tol", &imp_free_tol, NULL);		// Seokkoo Kang: tolerance of implicit matrix free solver. 1.e-4 is enough for most cases.
+	PetscOptionsGetReal(NULL, NULL, "-poisson_tol", &poisson_tol, NULL);		// Seokkoo Kang: tolerance of implicit matrix free solver. 1.e-4 is enough for most cases.
+	PetscOptionsGetReal(NULL, NULL, "-les_eps", &les_eps, NULL);		// Seokkoo Kang: small value for preventing very large Cs values in les>1
+	PetscOptionsGetReal(NULL, NULL, "-dpdz", &mean_pressure_gradient, &dpdz_set);		// Seokkoo Kang: tolerance of implicit matrix free solver. 1.e-4 is enough for most cases.
+	PetscOptionsGetReal(NULL, NULL, "-roughness", &roughness_size, &rough_set);	// Seokkoo Kang: roughness_size
+	PetscOptionsGetReal(NULL, NULL, "-amg_thresh", &amg_thresh, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-rho0", &rho_water, NULL);	
+	PetscOptionsGetReal(NULL, NULL, "-rho1", &rho_air, NULL);		
+	PetscOptionsGetReal(NULL, NULL, "-mu0", &mu_water, NULL);	
+	PetscOptionsGetReal(NULL, NULL, "-mu1", &mu_air, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-dthick", &dthick, &dthick_set);
 	PetscPrintf(PETSC_COMM_WORLD, "\nrho0=%f, rho1=%f, mu0=%f, mu1=%f\n", rho_water, rho_air, mu_water, mu_air);
-	PetscOptionsGetReal(PETSC_NULL, "-gx", &gravity_x, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-gy", &gravity_y, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-gz", &gravity_z, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-x_r", &(x_r), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-y_r", &(y_r), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-z_r", &(z_r), PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-gx", &gravity_x, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-gy", &gravity_y, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-gz", &gravity_z, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-x_r", &(x_r), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-y_r", &(y_r), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-z_r", &(z_r), NULL);
 
-	PetscOptionsGetReal(PETSC_NULL, "-inlet_y", &inlet_y, &inlet_y_flag);
-	PetscOptionsGetReal(PETSC_NULL, "-outlet_y", &outlet_y, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-inlet_y", &inlet_y, &inlet_y_flag);
+	PetscOptionsGetReal(NULL, NULL, "-outlet_y", &outlet_y, NULL);
 	
-	PetscOptionsGetReal(PETSC_NULL, "-inlet_z", &inlet_z, &inlet_z_flag);
-	PetscOptionsGetReal(PETSC_NULL, "-outlet_z", &outlet_z, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-inlet_z", &inlet_z, &inlet_z_flag);
+	PetscOptionsGetReal(NULL, NULL, "-outlet_z", &outlet_z, NULL);
 	
-	PetscOptionsGetReal(PETSC_NULL, "-x_c", &(CMx_c), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-y_c", &(CMy_c), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-z_c", &(CMz_c), PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-x_c", &(CMx_c), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-y_c", &(CMy_c), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-z_c", &(CMz_c), NULL);
 
-	PetscOptionsGetReal(PETSC_NULL, "-imp_atol", &(imp_atol), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-imp_rtol", &(imp_rtol), PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-imp_stol", &(imp_stol), PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-imp_atol", &(imp_atol), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-imp_rtol", &(imp_rtol), NULL);
+	PetscOptionsGetReal(NULL, NULL, "-imp_stol", &(imp_stol), NULL);
 	
-	PetscOptionsGetReal(PETSC_NULL, "-angvel", &angvel, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-angvel", &angvel, NULL);
 
   if (fish) {
-    PetscOptionsGetReal(PETSC_NULL, "-St_exp", &(St_exp), PETSC_NULL);
-    PetscOptionsGetReal(PETSC_NULL, "-wlngth", &(wavelength), PETSC_NULL);
+    PetscOptionsGetReal(NULL, NULL, "-St_exp", &(St_exp), NULL);
+    PetscOptionsGetReal(NULL, NULL, "-wlngth", &(wavelength), NULL);
   }
   PetscPrintf(PETSC_COMM_WORLD, "tiout %d %le %le thin %d!\n",tiout, imp_atol,imp_rtol,thin);
 
@@ -2015,7 +2015,7 @@ int main(int argc, char **argv)
       for (ibi=1; ibi<NumberOfBodies; ibi++) {	
 				Elmt_Move_FSI_ROT(&fsi[ibi], &ibm[ibi],0.,ibi);
       }
-      PetscBarrier(PETSC_NULL);
+      PetscBarrier(NULL);
       for (ibi=0; ibi<NumberOfBodies; ibi++) {
 				ibm_surface_out(&ibm[ibi], 0, ibi);
       }
@@ -2025,7 +2025,7 @@ int main(int argc, char **argv)
 				PetscPrintf(PETSC_COMM_WORLD, "Ibm read!\n");
 				/*     ibm_read(ibm0); */
 				ibm_read_ucd(&ibm[i], i);
-				PetscBarrier(PETSC_NULL);	
+				PetscBarrier(NULL);	
 				// init for fsi
 				/* FsiInitialize(ibm[i].n_elmt, &fsi[i], i); */
 				FsiInitialize(0, &fsi[i], i);
@@ -2037,7 +2037,7 @@ int main(int argc, char **argv)
 
 	if (rotor_model) {
 		PetscReal cl = 1.;
-		PetscOptionsGetReal(PETSC_NULL, "-chact_leng", &cl, PETSC_NULL);
+		PetscOptionsGetReal(NULL, NULL, "-chact_leng", &cl, NULL);
 		if (!my_rank) {
 			FILE *fd;
 			char str[256];
@@ -2186,7 +2186,7 @@ int main(int argc, char **argv)
 				PetscPrintf(PETSC_COMM_WORLD, "CT for %d th turbine  %f \n", ibi, (ibm_acl2ref[ibi].CT));
 			}
 		}
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		PetscPrintf(PETSC_COMM_WORLD, "Turbines read!\n");
 		if (rotor_model == 1) {
 			double reflength = reflength_wt;
@@ -2236,13 +2236,13 @@ int main(int argc, char **argv)
 			PetscPrintf(PETSC_COMM_WORLD, "Uref line pre-processing!\n");
 			Pre_process(&(user[0]), ibm_acl2ref, NumberOfTurbines); // 20140807
 		}
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		ti = 0;
 		if (rstart_flg) ti = tistart;
 	}	
 	if (IB_delta) {
 		PetscReal cl = 1.;
-		PetscOptionsGetReal(PETSC_NULL, "-chact_leng", &cl, PETSC_NULL);
+		PetscOptionsGetReal(NULL, NULL, "-chact_leng", &cl, NULL);
 		if (!my_rank) {
 			FILE *fd;
 			char str[256];
@@ -2332,14 +2332,14 @@ int main(int argc, char **argv)
     ti = tistart; tistart++;
     for (bi=0; bi<block_number; bi++) {
       Ucont_P_Binary_Input(&(user[bi]));
-      DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat);
-      DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat);
-      DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
-      DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
-      DAGlobalToLocalBegin(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
-      DAGlobalToLocalEnd(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
-      DAGlobalToLocalBegin(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
-      DAGlobalToLocalEnd(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
+      DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat);
+      DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat);
+      DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
+      DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
+      DMGlobalToLocalBegin(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
+      DMGlobalToLocalEnd(user[bi].da, user[bi].P, INSERT_VALUES, user[bi].lP);
+      DMGlobalToLocalBegin(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
+      DMGlobalToLocalEnd(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
       Contra2Cart(&(user[bi]));
 			if (rstart_fsi) {
 				for (ibi=0;ibi<NumberOfBodies;ibi++) {
@@ -2477,7 +2477,7 @@ int main(int argc, char **argv)
 					PetscPrintf(PETSC_COMM_WORLD, "IBM_SERA %d \n", ibi);
 					ibm_search_advanced(&(user[bi]), &ibm[ibi], ibi);
 				}
-				PetscBarrier(PETSC_NULL);
+				PetscBarrier(NULL);
 				PetscPrintf(PETSC_COMM_WORLD, "IBM_INTP\n");
 				ibm_interpolation_advanced(&user[bi]);
       }
@@ -2491,8 +2491,8 @@ int main(int argc, char **argv)
     if (rstart_flg) ti = tistart;
     if(ti==tistart && ti==0 && levelset) {
 			Levelset_Function_IC(&user[bi]);
-			DAGlobalToLocalBegin(user[bi].da, user[bi].Levelset, INSERT_VALUES, user[bi].lLevelset);
-			DAGlobalToLocalEnd(user[bi].da, user[bi].Levelset, INSERT_VALUES, user[bi].lLevelset);
+			DMGlobalToLocalBegin(user[bi].da, user[bi].Levelset, INSERT_VALUES, user[bi].lLevelset);
+			DMGlobalToLocalEnd(user[bi].da, user[bi].Levelset, INSERT_VALUES, user[bi].lLevelset);
 			VecCopy(user[bi].Levelset, user[bi].Levelset_o);
     }
     if(ti==tistart) Calc_Inlet_Area(&user[bi]);
@@ -2509,8 +2509,8 @@ int main(int argc, char **argv)
 			//else 
 			SetInitialGuessToOne(&(user[bi]));
 			Contra2Cart(&(user[bi]));
-			DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
-			DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
+			DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
+			DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
     }
 
     VecCopy(user[bi].Ucont, user[bi].Ucont_o);
@@ -2518,14 +2518,14 @@ int main(int argc, char **argv)
     VecCopy(user[bi].Ucont, user[bi].Ucont_rm1);
     VecCopy(user[bi].Ucat, user[bi].Ucat_o);
     VecCopy(user[bi].P, user[bi].P_o);
-    DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
-    DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
-    DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
-    DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
+    DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
+    DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
+    DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
+    DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
   }
-  PetscBarrier(PETSC_NULL);
+  PetscBarrier(NULL);
   PetscInt tisteps = 1000000;
-  PetscOptionsGetInt(PETSC_NULL, "-totalsteps", &tisteps, &flg);
+  PetscOptionsGetInt(NULL, NULL, "-totalsteps", &tisteps, &flg);
   if (tistart==0) tisteps ++;
 	
 /* ==================================================================================             */
@@ -2575,21 +2575,21 @@ int main(int argc, char **argv)
     for (bi=0; bi<block_number; bi++) {
       if (immersed) {
 				VecCopy(user[bi].Nvert, user[bi].Nvert_o);
-				DAGlobalToLocalBegin(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
-				DAGlobalToLocalEnd(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
+				DMGlobalToLocalBegin(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
+				DMGlobalToLocalEnd(user[bi].da, user[bi].Nvert_o, INSERT_VALUES, user[bi].lNvert_o);
       }
       //VecCopy(user[bi].Ucont_rm1, user[bi].Ucont_rm2);
 			if(levelset) VecCopy(user[bi].Levelset, user[bi].Levelset_o);
       VecCopy(user[bi].Ucont_o, user[bi].Ucont_rm1);
       VecCopy(user[bi].Ucont, user[bi].Ucont_o);
       VecCopy(user[bi].P, user[bi].P_o);
-      DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
-      DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
-      DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
-      DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
+      DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
+      DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_o, INSERT_VALUES, user[bi].lUcont_o);
+      DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
+      DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucont_rm1, INSERT_VALUES, user[bi].lUcont_rm1);
       //seokkoo
-      DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
-      DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
+      DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
+      DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucat, INSERT_VALUES, user[bi].lUcat_old);
     }
 
     if (immersed && (movefsi || rotatefsi || cop || fish || MHV)){

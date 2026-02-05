@@ -1,10 +1,10 @@
 -dt 0.002
 -tio 1000
-!-rstart 540000
-!-rs_fsi 5000
+#-rstart 540000
+#-rs_fsi 5000
 -delete 0
 -totalsteps 10000
-!-averaging 0
+#-averaging 0
 
 -ren 66666.6666
 -inv 0
@@ -16,7 +16,7 @@
 -binary 0
 -xyz 1
 -ii_periodic 1
-!-kk_periodic 1
+#-kk_periodic 1
 
 -levelset 1
 -levelset_solve2 0
@@ -33,12 +33,12 @@
 -level_in_height 0.0
 -inlet_y 0.
 -outlet_y 0.
-!-fix_outlet 0
-!-fix_inlet 0
+#-fix_outlet 0
+#-fix_inlet 0
 -fix_level 0
 -levelset_it 5
 -levelset_tau 0.05
-!-subdt_levelset 4
+#-subdt_levelset 4
 -air_flow_levelset 0
 -air_flow_levelset_periodic 0
 -levelset_weno 0
@@ -53,18 +53,18 @@
 -poisson_tol 1.e-8
 -inlet 0
 -perturb 0
-!-dpdz .0000000001
+#-dpdz .0000000001
 -flux 0
 -imp_tol 1.e-5
-!-cfl .1 
-!-vnn .1
+#-cfl .1 
+#-vnn .1
 
 -freesurface_wallmodel 0
-!-wave_average_k 0
-!-wave_k_ave 115
-!-wave_i_ave 31
-!-wave_ti_start 0
-!-wave_ti_startave 5000
+#-wave_average_k 0
+#-wave_k_ave 115
+#-wave_i_ave 31
+#-wave_ti_start 0
+#-wave_ti_startave 5000
 -wave_skip 1
 -wind_skip 1 !30
 -wind_start_read 0
@@ -137,49 +137,49 @@
 -floating_turbine_case 0
 
 
-!-save_inflow 0
-!-save_inflow_period 1000
-!-save_inflow_minus 0
-!-recycle 20000
-!-path_inflow "/mnt/lustre2/fsotiropoulos/cald0075/02_Actuator_models/03_OscilatingTurbine_SAFL_WT/00_ChannelFlow/02_inflow_G2"
+#-save_inflow 0
+#-save_inflow_period 1000
+#-save_inflow_minus 0
+#-recycle 20000
+#-path_inflow "/mnt/lustre2/fsotiropoulos/cald0075/02_Actuator_models/03_OscilatingTurbine_SAFL_WT/00_ChannelFlow/02_inflow_G2"
 
-!-rotor_modeled 0
-!-num_blade 3
-!-num_foiltype 1
-!-turbine 1
-!-reflength_wt 1.
-!-r_nacelle 0.0
-!-refvel_wt 1.0
-!-refvel_cfd 1.0
-!-loc_refvel 1.0
-!-rotatewt 1
-!-deltafunc 0
-!-halfwidth_dfunc 2.0
+#-rotor_modeled 0
+#-num_blade 3
+#-num_foiltype 1
+#-turbine 1
+#-reflength_wt 1.
+#-r_nacelle 0.0
+#-refvel_wt 1.0
+#-refvel_cfd 1.0
+#-loc_refvel 1.0
+#-rotatewt 1
+#-deltafunc 0
+#-halfwidth_dfunc 2.0
 
-!-turbine_6dof_fsi_motion 0
-!-turbine_prescrived_motion 0
-!-turbine_prescrived_motion_heave 0
-!-turbine_prescrived_motion_pitch 0
+#-turbine_6dof_fsi_motion 0
+#-turbine_prescrived_motion 0
+#-turbine_prescrived_motion_heave 0
+#-turbine_prescrived_motion_pitch 0
 
-!# turbine control
-!-turbinetorquecontrol 0
-!-fixturbineangvel 1
-!-FixTipSpeedRatio 0
-!-rstart_turbinerotation 0
-!-fixturbinegeneratortorque 0
-!-Shen_AL 1
-!-Shen1_AL 0
-!#-a_shen 
-!#-b_shen 12
-!#-c_shen
-!#-Prandtl_AL 0
-!#-g1_AL 0.2
-!#-correction3D_CH 0
-!#-c1_CH 1.8
-!#-correction3D_CL 0
-!#-correction_ALShen1 1.60
-!-c0_CL 1
-!-smoothforce_AL 0
-!-scale_velocity 1 
-!-radialforce_AL 0
-!-refangle_AL 10
+## turbine control
+#-turbinetorquecontrol 0
+#-fixturbineangvel 1
+#-FixTipSpeedRatio 0
+#-rstart_turbinerotation 0
+#-fixturbinegeneratortorque 0
+#-Shen_AL 1
+#-Shen1_AL 0
+##-a_shen 
+##-b_shen 12
+##-c_shen
+##-Prandtl_AL 0
+##-g1_AL 0.2
+##-correction3D_CH 0
+##-c1_CH 1.8
+##-correction3D_CL 0
+##-correction_ALShen1 1.60
+#-c0_CL 1
+#-smoothforce_AL 0
+#-scale_velocity 1 
+#-radialforce_AL 0
+#-refangle_AL 10

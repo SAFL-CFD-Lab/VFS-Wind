@@ -306,7 +306,7 @@ PetscErrorCode triangle_intpp(Cpt2D p, Cpt2D p1, Cpt2D p2, Cpt2D p3,
   return 0;
 }
 
-PetscTruth ISLineTriangleIntp(Cmpnts p1, Cmpnts p2, IBMNodes *ibm, PetscInt ln_v)
+PetscBool ISLineTriangleIntp(Cmpnts p1, Cmpnts p2, IBMNodes *ibm, PetscInt ln_v)
 {
   PetscInt cutthrough;
 

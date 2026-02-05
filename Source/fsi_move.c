@@ -23,7 +23,7 @@ PetscErrorCode FSI_DATA_Input(FSInfo *FSinf, PetscInt ibi)
   sprintf(filen, "DATA_FSI%5.5d_%2.2d.dat",ti, ibi);
   f = fopen(filen, "r");
   if (!f) {
-    SETERRQ(1, "Cannot open FSI DATA file");
+    SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_OPEN, "Cannot open FSI DATA file");
     PetscPrintf(PETSC_COMM_WORLD, "FSI_data cannot open file !!!!!!!!!!!!\n");
   }
   PetscPrintf(PETSC_COMM_WORLD, "FSI_data input begin %d %s\n",ti,filen);
@@ -50,7 +50,7 @@ PetscErrorCode FSI_DATA_Output(FSInfo *FSinfo, PetscInt ibi)
 {
   PetscInt rank, i;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-  PetscBarrier(PETSC_NULL);
+  PetscBarrier(NULL);
   if (!rank) {
     FILE *f;
     char filen[80];
@@ -162,7 +162,7 @@ PetscErrorCode Calc_FSI_pos(FSInfo *FSinfo,IBMNodes *ibm,
   PetscPrintf(PETSC_COMM_WORLD, "z, dz/dt  %le %le\n",S_new[4],S_new[5]);
   PetscInt rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-  PetscBarrier(PETSC_NULL);
+  PetscBarrier(NULL);
   if (!rank) {
     FILE *f;
     char filen[80];
@@ -619,7 +619,7 @@ PetscErrorCode Calc_FSI_Ang(FSInfo *FSinfo,IBMNodes *ibm,
 /*   PetscPrintf(PETSC_COMM_WORLD, "Ang_z, dAng_z/dt M_z  %le %le %le %le %le\n",S_ang_n[4],S_ang_n[5], M_z, S_ang_r[4],S_ang_rm1[4]); */
 /*   PetscInt rank; */
 /*   MPI_Comm_rank(PETSC_COMM_WORLD, &rank); */
-/*   PetscBarrier(PETSC_NULL); */
+/*   PetscBarrier(NULL); */
 /*   if (!rank) { */
 /*     FILE *f; */
 /*     char filen[80]; */
@@ -1156,7 +1156,7 @@ PetscErrorCode CollisionDetectionOfCylinders(FSInfo *fsi,
 	v_t2 = v_x2*n_x + v_y2*n_z - v_z2*n_y;
 
 	PetscPrintf(PETSC_COMM_WORLD,"          Velocity!!!! cyl1 %le %le %le  cyl2 %le %le %le\n", v_x,v_y,v_z,v_x2,v_y2,v_z2);
-/* 	PetscBarrier(PETSC_NULL); */
+/* 	PetscBarrier(NULL); */
 
 	v_x = v_n2*n_x + v_t1 *n_x;
 	v_y = v_n2*n_y + v_t1 *n_z;

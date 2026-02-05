@@ -9,7 +9,7 @@
 #include "variables.h"
 #include "petscksp.h"
 #include "petscpc.h"
-#include "petscmg.h"
+// petscmg.h removed in PETSc 3.x - MG is now in petscksp.h
 #include <stdlib.h>
 
 extern int i_periodic, j_periodic, k_periodic, pseudo_periodic;
@@ -98,18 +98,24 @@ void Create_Hypre_Solver()
 
 void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
  {
-	int i, rstart,rend;//
-	const int *cols;
-	int ncols;
+	PetscInt i, rstart, rend;
+	const PetscInt *cols;
+	PetscInt ncols;
 	const PetscScalar *values;
 
-	//HYPRE_IJMatrixInitialize(ij);	//->> Call just once when initialize matrix. memory leaks
-	MatGetOwnershipRange(v,&rstart,&rend);
+	MatGetOwnershipRange(v, &rstart, &rend);
 
-	for (i=rstart; i<rend; i++) {
-		 MatGetRow(v,i,&ncols,&cols,&values);
-		 HYPRE_IJMatrixSetValues(ij,1,&ncols,&i,cols,values);
-		 MatRestoreRow(v,i,&ncols,&cols,&values);
+	for (i = rstart; i < rend; i++) {
+		MatGetRow(v, i, &ncols, &cols, &values);
+		HYPRE_BigInt row_idx = (HYPRE_BigInt)i;
+		HYPRE_Int ncols_h = (HYPRE_Int)ncols;
+		// Convert column indices to HYPRE_BigInt
+		std::vector<HYPRE_BigInt> cols_h(ncols);
+		for (PetscInt c = 0; c < ncols; c++) {
+			cols_h[c] = (HYPRE_BigInt)cols[c];
+		}
+		HYPRE_IJMatrixSetValues(ij, 1, &ncols_h, &row_idx, cols_h.data(), (const HYPRE_Complex*)values);
+		MatRestoreRow(v, i, &ncols, &cols, &values);
 	}
 
 	HYPRE_IJMatrixAssemble(ij);
@@ -119,7 +125,7 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
  {
 	if( user->bctype[3] == -10 ) return;
 	 
-	DALocalInfo info = user->info;
+	DMDALocalInfo info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -141,9 +147,9 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
   	
-	DAVecGetArray(user->da, user->lAj, &aj);
-	DAVecGetArray(user->da, user->Gid, &gid);
-	DAVecGetArray(user->da, user->lNvert, &nvert);
+	DMDAVecGetArray(user->da, user->lAj, &aj);
+	DMDAVecGetArray(user->da, user->Gid, &gid);
+	DMDAVecGetArray(user->da, user->lNvert, &nvert);
 	
 	int lcount=0;
 	double sum, sum_aj;
@@ -152,9 +158,9 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
 	for (i=lxs; i<lxe; i++) {
-		double val;
+		HYPRE_Complex val;
 		if (nvert[k][j][i] < 0.1) {
-			int idx=(int)gid[k][j][i];
+			HYPRE_BigInt idx=(HYPRE_BigInt)gid[k][j][i];
 			HYPRE_IJVectorGetValues(B, 1, &idx, &val);
 			localsum += val;
 			localsum_aj += aj[k][j][i];
@@ -172,9 +178,9 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	for (j=lys; j<lye; j++)
 	for (i=lxs; i<lxe; i++) {
 		if(nvert[k][j][i]<0.1) {
-			int idx=(int)gid[k][j][i];
+			HYPRE_BigInt idx=(HYPRE_BigInt)gid[k][j][i];
 			//double val = -sum/(double) (user->rhs_count);
-			double val = -sum * aj[k][j][i] / sum_aj;
+			HYPRE_Complex val = -sum * aj[k][j][i] / sum_aj;
 			HYPRE_IJVectorAddToValues(B, 1, &idx, &val);
 		}
 	}
@@ -194,16 +200,16 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	}
 	HYPRE_IJVectorAssemble(B);
 	*/
-	DAVecRestoreArray(user->da, user->lAj, &aj);
-	DAVecRestoreArray(user->da, user->Gid, &gid);
-	DAVecRestoreArray(user->da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(user->da, user->lAj, &aj);
+	DMDAVecRestoreArray(user->da, user->Gid, &gid);
+	DMDAVecRestoreArray(user->da, user->lNvert, &nvert);
  }
  
  void Remove_Nullspace(UserCtx *user, HYPRE_IJVector &B, int i_lower)
  {
 	if ( user->bctype[3] == -10 ) return;
 	 	 
-	DALocalInfo info = user->info;
+	DMDALocalInfo info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -225,8 +231,8 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
   	
-	DAVecGetArray(user->da, user->Gid, &gid);
-	DAVecGetArray(user->da, user->lNvert, &nvert);
+	DMDAVecGetArray(user->da, user->Gid, &gid);
+	DMDAVecGetArray(user->da, user->lNvert, &nvert);
 	
 	int lcount=0;
 	double localsum=0;
@@ -234,9 +240,9 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
 	for (i=lxs; i<lxe; i++) {
-		double val;
+		HYPRE_Complex val;
 		if (nvert[k][j][i] < 0.1) {
-			int idx=(int)gid[k][j][i];
+			HYPRE_BigInt idx=(HYPRE_BigInt)gid[k][j][i];
 			HYPRE_IJVectorGetValues(B, 1, &idx, &val);
 			localsum += val;
 			lcount++;
@@ -246,25 +252,25 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	double sum;
 	PetscGlobalSum(&localsum, &sum, PETSC_COMM_WORLD);
 	MPI_Allreduce( &lcount, &user->rhs_count, 1, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
-	
-	double val = -sum/(double) (user->rhs_count);	
+
+	HYPRE_Complex val_add = -sum/(double) (user->rhs_count);
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
 	for (i=lxs; i<lxe; i++) {
 		if(nvert[k][j][i]<0.1) {
-			int idx=(int)gid[k][j][i];
-			HYPRE_IJVectorAddToValues(B, 1, &idx, &val);
+			HYPRE_BigInt idx=(HYPRE_BigInt)gid[k][j][i];
+			HYPRE_IJVectorAddToValues(B, 1, &idx, &val_add);
 		}
 	}
 	HYPRE_IJVectorAssemble(B);
 	
-	DAVecRestoreArray(user->da, user->Gid, &gid);
-	DAVecRestoreArray(user->da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(user->da, user->Gid, &gid);
+	DMDAVecRestoreArray(user->da, user->lNvert, &nvert);
  }
  
   void PoissonRHS2_hypre(UserCtx *user, HYPRE_IJVector &B, int i_lower)
 {
-	DALocalInfo info = user->info;
+	DMDALocalInfo info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -290,32 +296,32 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
   	
-	DAVecGetArray(user->fda, user->lUcont, &ucont);
-	DAVecGetArray(user->da, user->lNvert, &nvert);
-	DAVecGetArray(user->da, user->lAj, &aj);
-  	DAVecGetArray(user->da, user->Gid, &gid);
-	DAVecGetArray(user->fda, user->lCent, &cent);
+	DMDAVecGetArray(user->fda, user->lUcont, &ucont);
+	DMDAVecGetArray(user->da, user->lNvert, &nvert);
+	DMDAVecGetArray(user->da, user->lAj, &aj);
+  	DMDAVecGetArray(user->da, user->Gid, &gid);
+	DMDAVecGetArray(user->fda, user->lCent, &cent);
 	
-	DAVecGetArray(user->fda, user->lICsi, &icsi);
-	DAVecGetArray(user->fda, user->lIEta, &ieta);
-	DAVecGetArray(user->fda, user->lIZet, &izet);
+	DMDAVecGetArray(user->fda, user->lICsi, &icsi);
+	DMDAVecGetArray(user->fda, user->lIEta, &ieta);
+	DMDAVecGetArray(user->fda, user->lIZet, &izet);
 
-	DAVecGetArray(user->fda, user->lJCsi, &jcsi);
-	DAVecGetArray(user->fda, user->lJEta, &jeta);
-	DAVecGetArray(user->fda, user->lJZet, &jzet);
+	DMDAVecGetArray(user->fda, user->lJCsi, &jcsi);
+	DMDAVecGetArray(user->fda, user->lJEta, &jeta);
+	DMDAVecGetArray(user->fda, user->lJZet, &jzet);
 
-	DAVecGetArray(user->fda, user->lKCsi, &kcsi);
-	DAVecGetArray(user->fda, user->lKEta, &keta);
-	DAVecGetArray(user->fda, user->lKZet, &kzet);
+	DMDAVecGetArray(user->fda, user->lKCsi, &kcsi);
+	DMDAVecGetArray(user->fda, user->lKEta, &keta);
+	DMDAVecGetArray(user->fda, user->lKZet, &kzet);
 	
-	DAVecGetArray(user->da, user->lIAj, &iaj);
-	DAVecGetArray(user->da, user->lJAj, &jaj);
-	DAVecGetArray(user->da, user->lKAj, &kaj);
+	DMDAVecGetArray(user->da, user->lIAj, &iaj);
+	DMDAVecGetArray(user->da, user->lJAj, &jaj);
+	DMDAVecGetArray(user->da, user->lKAj, &kaj);
 	
-	DAVecGetArray(user->da, user->lP, &p);
+	DMDAVecGetArray(user->da, user->lP, &p);
 	
 	if(levelset) {
-		DAVecGetArray(user->da, user->lDensity, &rho);
+		DMDAVecGetArray(user->da, user->lDensity, &rho);
 	}
 		
 	int lcount=0;
@@ -324,7 +330,7 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
 	for (i=lxs; i<lxe; i++) {
-		double val;
+		HYPRE_Complex val;
 		if (nvert[k][j][i] >= 0.1) {
 			/*if( (int) (gid[k][j][i]) >=0 ) val = 0;	// for fsi
 			else */continue;
@@ -333,7 +339,7 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 			double coeff=time_coeff();
 
 			val=0;
-			
+
 			val -= ucont[k][j][i].x;
 
 			if(i==1 && i_periodic) val += ucont[k][j][mx-2].x;
@@ -351,7 +357,7 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 			if(k==1 && k_periodic) val += ucont[mz-2][j][i].z;
 			else if(k==1 && kk_periodic) val += ucont[-2][j][i].z;
 			else val += ucont[k-1][j][i].z;
-		
+
 			val *=  -1.0 / dt * user->st * coeff;
 			/*
 			if(levelset && user->bctype[5]==4 && k==mz-2) {
@@ -364,8 +370,8 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 			//if(k==1 && j>34) printf("%f %f\n", ucont[k][j][i].z/kzet[k][j][i].z, ucont[k-1][j][i].z/kzet[k][j][i].z);
 			lcount++;
 		}
-		int idx=(int)gid[k][j][i];
-		
+		HYPRE_BigInt idx=(HYPRE_BigInt)gid[k][j][i];
+
 		HYPRE_IJVectorSetValues(B, 1, &idx, &val);
 		localsum += val;
 	}
@@ -377,33 +383,33 @@ void MatHYPRE_IJMatrixCopy(Mat v,HYPRE_IJMatrix &ij)
 	//else Remove_Nullspace(user, B, i_lower);
 	else Remove_Nullspace_Scale(user, B, i_lower); //101103
   
-	DAVecRestoreArray(user->da, user->lP, &p);
+	DMDAVecRestoreArray(user->da, user->lP, &p);
 	
 	if(levelset) {
-		DAVecRestoreArray(user->da, user->lDensity, &rho);
+		DMDAVecRestoreArray(user->da, user->lDensity, &rho);
 	}
 
-	DAVecRestoreArray(user->fda, user->lCent, &cent);
-	DAVecRestoreArray(user->da, user->Gid, &gid);
-	DAVecRestoreArray(user->fda, user->lUcont, &ucont);
-	DAVecRestoreArray(user->da, user->lNvert, &nvert);
-	DAVecRestoreArray(user->da, user->lAj, &aj);
+	DMDAVecRestoreArray(user->fda, user->lCent, &cent);
+	DMDAVecRestoreArray(user->da, user->Gid, &gid);
+	DMDAVecRestoreArray(user->fda, user->lUcont, &ucont);
+	DMDAVecRestoreArray(user->da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(user->da, user->lAj, &aj);
 
-	DAVecRestoreArray(user->fda, user->lICsi, &icsi);
-	DAVecRestoreArray(user->fda, user->lIEta, &ieta);
-	DAVecRestoreArray(user->fda, user->lIZet, &izet);
+	DMDAVecRestoreArray(user->fda, user->lICsi, &icsi);
+	DMDAVecRestoreArray(user->fda, user->lIEta, &ieta);
+	DMDAVecRestoreArray(user->fda, user->lIZet, &izet);
 
-	DAVecRestoreArray(user->fda, user->lJCsi, &jcsi);
-	DAVecRestoreArray(user->fda, user->lJEta, &jeta);
-	DAVecRestoreArray(user->fda, user->lJZet, &jzet);
+	DMDAVecRestoreArray(user->fda, user->lJCsi, &jcsi);
+	DMDAVecRestoreArray(user->fda, user->lJEta, &jeta);
+	DMDAVecRestoreArray(user->fda, user->lJZet, &jzet);
 
-	DAVecRestoreArray(user->fda, user->lKCsi, &kcsi);
-	DAVecRestoreArray(user->fda, user->lKEta, &keta);
-	DAVecRestoreArray(user->fda, user->lKZet, &kzet);
+	DMDAVecRestoreArray(user->fda, user->lKCsi, &kcsi);
+	DMDAVecRestoreArray(user->fda, user->lKEta, &keta);
+	DMDAVecRestoreArray(user->fda, user->lKZet, &kzet);
 	
-	DAVecRestoreArray(user->da, user->lIAj, &iaj);
-	DAVecRestoreArray(user->da, user->lJAj, &jaj);
-	DAVecRestoreArray(user->da, user->lKAj, &kaj);
+	DMDAVecRestoreArray(user->da, user->lIAj, &iaj);
+	DMDAVecRestoreArray(user->da, user->lJAj, &jaj);
+	DMDAVecRestoreArray(user->da, user->lKAj, &kaj);
 }
 
 void Petsc_to_Hypre_Vector(Vec A, HYPRE_IJVector &B, int i_lower)
@@ -412,34 +418,35 @@ void Petsc_to_Hypre_Vector(Vec A, HYPRE_IJVector &B, int i_lower)
 	PetscReal *a;
 	
 	VecGetLocalSize(A, &localsize);
-	std::vector<int> indices (localsize);
-	
+	std::vector<HYPRE_BigInt> indices(localsize);
+	std::vector<HYPRE_Complex> values_h(localsize);
+
 	VecGetArray(A, &a);
-	for(register int i=0; i<localsize; i++) /*values[i] = a[i],*/ indices[i] = i_lower + i;
-	
-	
-	HYPRE_IJVectorSetValues(B, localsize, &indices[0], &a[0]);
+	for(int i=0; i<localsize; i++) {
+		indices[i] = (HYPRE_BigInt)(i_lower + i);
+		values_h[i] = (HYPRE_Complex)a[i];
+	}
+
+	HYPRE_IJVectorSetValues(B, localsize, indices.data(), values_h.data());
 	HYPRE_IJVectorAssemble(B);
-	
+
 	VecRestoreArray(A, &a);
-	
-	std::vector<int> ().swap(indices);
 };
 
 void Hypre_to_Petsc_Vector(HYPRE_IJVector &B, Vec A, int i_lower)
 {
-	int localsize;
+	PetscInt localsize;
 	VecGetLocalSize(A, &localsize);
-	
-	std::vector<double> values (localsize);
-	std::vector<int> indices (localsize);
-	
-	for(register int i=0; i<localsize; i++) indices[i] = i_lower + i;
-	HYPRE_IJVectorGetValues(B, localsize, &indices[0], &values[0]);
-	
+
+	std::vector<HYPRE_Complex> values_h(localsize);
+	std::vector<HYPRE_BigInt> indices(localsize);
+
+	for(int i=0; i<localsize; i++) indices[i] = (HYPRE_BigInt)(i_lower + i);
+	HYPRE_IJVectorGetValues(B, localsize, indices.data(), values_h.data());
+
 	PetscReal *a;
 	VecGetArray(A, &a);
-	for(register int i=0; i<localsize; i++) a[i] = values[i];
+	for(int i=0; i<localsize; i++) a[i] = (PetscReal)values_h[i];
 	VecRestoreArray(A, &a);
 };
 
@@ -461,51 +468,51 @@ void Create_Hypre_Matrix(UserCtx *user)
 	int localsize_p;
 	VecGetLocalSize(user->Phi2, &localsize_p);
 	
-	int p_lower = user->p_global_begin;
-	int p_upper = p_lower + localsize_p - 1;
-	
-	std::vector<int> nz_p (localsize_p);
-	std::fill ( nz_p.begin(), nz_p.end(), 19);
+	HYPRE_BigInt p_lower = (HYPRE_BigInt)user->p_global_begin;
+	HYPRE_BigInt p_upper = p_lower + localsize_p - 1;
+
+	std::vector<HYPRE_Int> nz_p(localsize_p);
+	std::fill(nz_p.begin(), nz_p.end(), 19);
 
 	PetscPrintf(PETSC_COMM_WORLD, "\nbegin HYPRE_IJMatrixCreate\n");
 	HYPRE_IJMatrixCreate(PETSC_COMM_WORLD, p_lower, p_upper, p_lower, p_upper, &Ap);
 	HYPRE_IJMatrixSetObjectType(Ap, HYPRE_PARCSR);
-	HYPRE_IJMatrixSetRowSizes(Ap, &nz_p[0]);
-	HYPRE_IJMatrixSetMaxOffProcElmts (Ap, 10);
+	HYPRE_IJMatrixSetRowSizes(Ap, nz_p.data());
+	HYPRE_IJMatrixSetMaxOffProcElmts(Ap, 10);
 	HYPRE_IJMatrixInitialize(Ap);
 	PetscPrintf(PETSC_COMM_WORLD, "end HYPRE_IJMatrixCreate\n\n");
 }
 
 void Create_Hypre_Vector(UserCtx *user)
 {
-	int localsize_p;
-	
+	PetscInt localsize_p;
+
 	VecGetLocalSize(user->Phi2, &localsize_p);
-	
-	int p_lower = user->p_global_begin;
-	int p_upper = p_lower + localsize_p - 1;
-	
+
+	HYPRE_BigInt p_lower = (HYPRE_BigInt)user->p_global_begin;
+	HYPRE_BigInt p_upper = p_lower + localsize_p - 1;
+
 	PetscPrintf(PETSC_COMM_WORLD, "\nbegin HYPRE_IJVectorCreate\n");
-	
+
 	// p vector
 	HYPRE_IJVectorCreate(PETSC_COMM_WORLD, p_lower, p_upper, &Vec_p);
 	HYPRE_IJVectorSetObjectType(Vec_p, HYPRE_PARCSR);
-	HYPRE_IJVectorSetMaxOffProcElmts (Vec_p, 10);//?
-		
+	HYPRE_IJVectorSetMaxOffProcElmts(Vec_p, 10);//?
+
 	HYPRE_IJVectorCreate(PETSC_COMM_WORLD, p_lower, p_upper, &Vec_p_rhs);
 	HYPRE_IJVectorSetObjectType(Vec_p_rhs, HYPRE_PARCSR);
-	HYPRE_IJVectorSetMaxOffProcElmts (Vec_p_rhs, 10);//?
-	
+	HYPRE_IJVectorSetMaxOffProcElmts(Vec_p_rhs, 10);//?
+
 	HYPRE_IJVectorInitialize(Vec_p);
 	HYPRE_IJVectorInitialize(Vec_p_rhs);
-	
+
 	PetscPrintf(PETSC_COMM_WORLD, "end HYPRE_IJVectorCreate\n\n");
 };
 
 
 void PoissonSolver_Hypre(UserCtx *user, IBMNodes *ibm, IBMInfo *ibminfo)
 {
-	DALocalInfo info = user->info;
+	DMDALocalInfo info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -527,7 +534,7 @@ void PoissonSolver_Hypre(UserCtx *user, IBMNodes *ibm, IBMInfo *ibminfo)
 	const PetscInt bi=0;
 
 	PetscReal ts,te,cput;
-	PetscGetTime(&ts);
+	PetscTime(&ts);
 	
 //	extern PetscInt movefsi, rotatefsi;
 	
@@ -539,14 +546,14 @@ void PoissonSolver_Hypre(UserCtx *user, IBMNodes *ibm, IBMInfo *ibminfo)
 		Create_Hypre_Vector(user);
 		
 		MatHYPRE_IJMatrixCopy(user->A, Ap);
-		MatDestroy(user->A);	user->assignedA=PETSC_FALSE;
+		MatDestroy(&user->A);	user->assignedA=PETSC_FALSE;
 		
 		HYPRE_IJMatrixGetObject(Ap, (void**) &par_Ap);
 		
 		Create_Hypre_Solver();
 	}
 	else if(movefsi || rotatefsi || (levelset && !fix_level) ) {
-		/*VecDestroy(user->Gid); destroyed inside lidx2 func*/
+		/*VecDestroy(&user->Gid); destroyed inside lidx2 func*/
 		PoissonLHSNew(user, ibm, user->ibm_intp);
 		
 		Destroy_Hypre_Matrix(user);
@@ -556,7 +563,7 @@ void PoissonSolver_Hypre(UserCtx *user, IBMNodes *ibm, IBMInfo *ibminfo)
 		Create_Hypre_Vector(user);
 		
 		MatHYPRE_IJMatrixCopy(user->A, Ap);
-		MatDestroy(user->A);	user->assignedA=PETSC_FALSE;
+		MatDestroy(&user->A);	user->assignedA=PETSC_FALSE;
 		
 		HYPRE_IJMatrixGetObject(Ap, (void**) &par_Ap);
 		
@@ -599,9 +606,9 @@ void PoissonSolver_Hypre(UserCtx *user, IBMNodes *ibm, IBMInfo *ibminfo)
 	
 	MPI_Barrier(PETSC_COMM_WORLD);
 	
-	//PetscGetTime(&ts);
+	//PetscTime(&ts);
 	HYPRE_ParCSRGMRESSolve (pcg_solver_p, par_Ap, par_Vec_p_rhs, par_Vec_p);
-	PetscGetTime(&te);
+	PetscTime(&te);
 
 	if(levelset && user->bctype[5]==4) { }
 	/*else if ( movefsi || rotatefsi ) { }*/
@@ -615,8 +622,8 @@ void PoissonSolver_Hypre(UserCtx *user, IBMNodes *ibm, IBMInfo *ibminfo)
 	
 	Convert_Phi2_Phi(user);
 	
-	DAGlobalToLocalBegin(user->da, user->Phi, INSERT_VALUES, user->lPhi);
-	DAGlobalToLocalEnd(user->da, user->Phi, INSERT_VALUES, user->lPhi);
+	DMGlobalToLocalBegin(user->da, user->Phi, INSERT_VALUES, user->lPhi);
+	DMGlobalToLocalEnd(user->da, user->Phi, INSERT_VALUES, user->lPhi);
 		
       
 	cput=te-ts;

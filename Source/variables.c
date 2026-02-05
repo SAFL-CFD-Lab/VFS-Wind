@@ -9,7 +9,7 @@
 #include "variables.h"
 
 void initlist(LIST *ilist) {
-  ilist->head = PETSC_NULL;
+  ilist->head = NULL;
 }
 
 void insertnode(LIST *ilist, PetscInt Node)
@@ -18,7 +18,7 @@ void insertnode(LIST *ilist, PetscInt Node)
   node *current;
   current = ilist->head;
 
-  PetscTruth Exist = PETSC_FALSE;
+  PetscBool Exist = PETSC_FALSE;
   while(current) {
     if (Node == current->Node) {
       Exist = PETSC_TRUE;
@@ -45,7 +45,7 @@ void destroy(LIST *ilist)
 }
 
 void InitIBMList(IBMList *ilist) {
-  ilist->head = PETSC_NULL;
+  ilist->head = NULL;
 }
 
 void AddIBMNode(IBMList *ilist, IBMInfo ibm_intp)

@@ -9,19 +9,28 @@
 #ifndef _VARIABLES_H_
 #define _VARIABLES_H_
 
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
 #include "HYPRE_krylov.h"
+
+/* Compatibility macros for deprecated PETSc global reduction functions (removed in PETSc 3.2+) */
+#define PetscGlobalSum(local, global, comm) \
+    MPI_Allreduce((local), (global), 1, MPIU_REAL, MPIU_SUM, (comm))
+#define PetscGlobalMax(local, global, comm) \
+    MPI_Allreduce((local), (global), 1, MPIU_REAL, MPIU_MAX, (comm))
+#define PetscGlobalMin(local, global, comm) \
+    MPI_Allreduce((local), (global), 1, MPIU_REAL, MPIU_MIN, (comm))
 #include "HYPRE.h"
 #include "HYPRE_parcsr_ls.h"
 #include "HYPRE_struct_ls.h"
 #include "HYPRE_sstruct_ls.h"
-#include "HYPRE_IJ_mv.h"
-#include <unistd.h>
-#include<string.h>
-#include<stdio.h> 
+#include "HYPRE_IJ_mv.h" 
 
 #include <stdlib.h>
 #include "petscvec.h"
-#include "petscda.h"
+#include "petscdmda.h"
 #include "petscksp.h"
 #include "petscsnes.h"
 #include <assert.h>
@@ -238,11 +247,11 @@ typedef struct IBMList {
 
 
 typedef struct UserCtx {
-	
-	DA da;	/* Data structure for scalars (include the grid geometry informaion, to obtain the grid information, use DAGetCoordinates) */
-	DA fda;	// Data Structure for vectors
-	DA fda2;	// Data Structure for vectors with 2 variables
-	DALocalInfo info;
+
+	DM da;	/* Data structure for scalars (include the grid geometry informaion, to obtain the grid information, use DMGetCoordinates) */
+	DM fda;	// Data Structure for vectors
+	DM fda2;	// Data Structure for vectors with 2 variables
+	DMDALocalInfo info;
 
 	Vec	Cent;	// Coordinates of cell centers
 	Vec	Csi, Eta, Zet, Aj;
@@ -355,7 +364,7 @@ typedef struct UserCtx {
 	PetscReal FluxInSum, FluxOutSum;
 
 	PetscErrorCode aotopetsc;
-	PetscTruth assignedA;
+	PetscBool assignedA;
 
 	PetscInt _this;
 	PetscInt *idx_from;
@@ -373,7 +382,7 @@ typedef struct UserCtx {
 
 	IBMNodes *ibm;
 
-	DA	*da_f, *da_c;
+	DM	*da_f, *da_c;
 	struct UserCtx *user_f, *user_c;
 	Vec	*lNvert_c;
 
@@ -386,13 +395,13 @@ typedef struct UserCtx {
   
   /* Variables for multi-nullspace case */
 	PetscInt *KSKE;
-	PetscTruth multinullspace;
+	PetscBool multinullspace;
 
 	IBMList *ibmlist;
 
 	PetscInt thislevel, mglevels;
 
-	PetscTruth *isc, *jsc, *ksc;
+	PetscBool *isc, *jsc, *ksc;
   
 	FlowWave *inflow;
 	PetscInt number_flowwave;
@@ -531,7 +540,7 @@ typedef struct {
 	PetscInt mglevels;
 	PetscInt thislevel;
 
-	PetscTruth  isc, jsc, ksc;
+	PetscBool  isc, jsc, ksc;
 	MGCtx *mgctx;
 } UserMG;
 
@@ -617,7 +626,7 @@ void insertnode(LIST *ilist, PetscInt Node);
 void destroy(LIST *ilist);
 PetscErrorCode Blank_Interface(UserCtx *user);
 PetscInt intsect_triangle(PetscReal orig[3], PetscReal dir[3], PetscReal vert0[3], PetscReal vert1[3], PetscReal vert2[3], PetscReal *t, PetscReal *u, PetscReal *v);
-PetscTruth ISLineTriangleIntp(Cmpnts p1, Cmpnts p2, IBMNodes *ibm, PetscInt ln_v);
+PetscBool ISLineTriangleIntp(Cmpnts p1, Cmpnts p2, IBMNodes *ibm, PetscInt ln_v);
 PetscInt ISPointInTriangle(Cmpnts p, Cmpnts p1, Cmpnts p2, Cmpnts p3, PetscReal nfx, PetscReal nfy, PetscReal nfz);
 PetscErrorCode Dis_P_Line(Cmpnts p, Cmpnts p1, Cmpnts p2, Cmpnts *po, PetscReal *d);
 PetscErrorCode triangle_intp2(Cpt2D p, Cpt2D p1, Cpt2D p2, Cpt2D p3, IBMInfo *ibminfo);
@@ -639,7 +648,7 @@ PetscErrorCode ibm_surface_out(IBMNodes *ibm, PetscInt ti, PetscInt ibi);
 PetscErrorCode ibm_search_advanced(UserCtx *user, IBMNodes *ibm, PetscInt ibi);
 PetscErrorCode ibm_interpolation_advanced(UserCtx *user);
 PetscErrorCode fluxin(UserCtx *user);
-PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt itr_sc, PetscInt tistart, PetscTruth *DoSCLoop);
+PetscErrorCode Struc_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt itr_sc, PetscInt tistart, PetscBool *DoSCLoop);
 PetscErrorCode Flow_Solver(UserMG *usermg,IBMNodes *ibm, FSInfo *fsi, PetscInt itr_sc, IBMNodes *wtm, ACL *acl, FSInfo *fsi_wt, IBMNodes *ibm_ACD, FSInfo *fsi_IBDelta,IBMNodes *ibm_IBDelta,
 IBMNodes *ibm_acl2ref, FSInfo *fsi_acl2ref, IBMNodes *ibm_nacelle, FSInfo *fsi_nacelle);
 PetscErrorCode MG_Finalize(UserMG *usermg);
@@ -1268,7 +1277,7 @@ extern IBMNodes	*ibm_ptr;
 extern  FSInfo        *fsi_ptr;
 extern PetscInt implicit, TwoD, initialzero;
 extern PetscInt movefsi, rotatefsi;
-extern PetscTruth dpdz_set;
+extern PetscBool dpdz_set;
 extern int ib_bctype[128];
 extern int dynamic_freq;
 extern int laplacian, rotational, skew, tiout_ufield, tiend_ufield;
@@ -1277,7 +1286,7 @@ extern int levelset_solve2;
 extern double rho_water, rho_air;
 extern double mu_water, mu_air;
 extern double dthick;
-extern PetscTruth dthick_set;
+extern PetscBool dthick_set;
 extern int inviscid, surface_tension, poisson;
 extern double gravity_x, gravity_y, gravity_z;
 extern double inlet_y, outlet_y, inlet_z, outlet_z;
@@ -1289,10 +1298,10 @@ extern int export_FS_elev;
 
 extern PetscReal FluxInSum, FluxOutSum;
 extern PetscReal FluxInSum_gas, FluxOutSum_gas;
-extern PetscTruth inlet_y_flag, inlet_z_flag;
+extern PetscBool inlet_y_flag, inlet_z_flag;
 extern int ibm_search;
 extern PetscInt  inlet_buffer_k;
-extern PetscTruth rough_set;
+extern PetscBool rough_set;
 extern double roughness_size;
 extern double dt_inflow;
 

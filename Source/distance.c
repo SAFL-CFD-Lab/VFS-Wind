@@ -28,16 +28,16 @@ void Init_LevelSet_Vectors(UserCtx *user)
 
 void Destroy_LevelSet_Vectors(UserCtx	*user)
 {
-	VecDestroy (LevelSet);
-	VecDestroy (LevelSet0);
-	VecDestroy (LevelSet_o);
-	//VecDestroy (lLevelSet);
+	VecDestroy(&LevelSet);
+	VecDestroy(&LevelSet0);
+	VecDestroy(&LevelSet_o);
+	//VecDestroy(&lLevelSet);
 };
 
 void Distance_Function_RHS (UserCtx *user, Vec Levelset_RHS, int wall_distance)
 {
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info = user->info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info = user->info;
 	PetscInt	xs,	xe,	ys,	ye,	zs,	ze;
 	PetscInt	mx,	my,	mz;
 	PetscInt	i, j,	k;
@@ -77,19 +77,19 @@ void Distance_Function_RHS (UserCtx *user, Vec Levelset_RHS, int wall_distance)
 	VecDuplicate(user->lP, &L);
 	VecDuplicate(user->lP, &lLevelset0);
 	
-	DAGlobalToLocalBegin(user->da, LevelSet0, INSERT_VALUES, lLevelset0);
-	DAGlobalToLocalEnd(user->da, LevelSet0,	INSERT_VALUES, lLevelset0);
+	DMGlobalToLocalBegin(user->da, LevelSet0, INSERT_VALUES, lLevelset0);
+	DMGlobalToLocalEnd(user->da, LevelSet0,	INSERT_VALUES, lLevelset0);
 	
-	DAVecGetArray(fda, Csi,	&csi);
-	DAVecGetArray(fda, Eta,	&eta);
-	DAVecGetArray(fda, Zet,	&zet);
-	DAVecGetArray(da,	 Aj,	&aj);
-	DAVecGetArray(da,	user->lNvert,	&nvert);
-	DAVecGetArray(da,	user->lLevelset, &level);
-	DAVecGetArray(da,	lLevelset0,	&level0);
-	DAVecGetArray(da,	Levelset_RHS,	&rhs);
+	DMDAVecGetArray(fda, Csi,	&csi);
+	DMDAVecGetArray(fda, Eta,	&eta);
+	DMDAVecGetArray(fda, Zet,	&zet);
+	DMDAVecGetArray(da,	 Aj,	&aj);
+	DMDAVecGetArray(da,	user->lNvert,	&nvert);
+	DMDAVecGetArray(da,	user->lLevelset, &level);
+	DMDAVecGetArray(da,	lLevelset0,	&level0);
+	DMDAVecGetArray(da,	Levelset_RHS,	&rhs);
 	
-	DAVecGetArray(da,  L,  &grad_level);
+	DMDAVecGetArray(da,  L,  &grad_level);
 	for	(k=lzs;	k<lze; k++)
 	for	(j=lys;	j<lye; j++)
 	for	(i=lxs;	i<lxe; i++) {
@@ -115,12 +115,12 @@ void Distance_Function_RHS (UserCtx *user, Vec Levelset_RHS, int wall_distance)
 		grad_level[k][j][i] = sqrt( dl_dx*dl_dx	+ dl_dy*dl_dy +	dl_dz*dl_dz );
 		if(nvert[k][j][i]>0.1) grad_level[k][j][i]=0;
 	}
-	DAVecRestoreArray(da,  L,  &grad_level);
+	DMDAVecRestoreArray(da,  L,  &grad_level);
 
-	DALocalToLocalBegin(user->da, L, INSERT_VALUES,	L);
-	DALocalToLocalEnd(user->da, L, INSERT_VALUES, L);
+	DMLocalToLocalBegin(user->da, L, INSERT_VALUES,	L);
+	DMLocalToLocalEnd(user->da, L, INSERT_VALUES, L);
 	
-	DAVecGetArray(da,  L,  &grad_level);
+	DMDAVecGetArray(da,  L,  &grad_level);
 	
 	// Neumann,	periodic conditions
 	if(xs==0 ||	xe==mx)	{
@@ -197,10 +197,10 @@ void Distance_Function_RHS (UserCtx *user, Vec Levelset_RHS, int wall_distance)
 		}
 	}
 	
-	DAVecRestoreArray(da,  L,  &grad_level);
-	DALocalToLocalBegin(user->da, L, INSERT_VALUES,	L);
-	DALocalToLocalEnd(user->da, L, INSERT_VALUES, L);
-	DAVecGetArray(da,  L,  &grad_level);
+	DMDAVecRestoreArray(da,  L,  &grad_level);
+	DMLocalToLocalBegin(user->da, L, INSERT_VALUES,	L);
+	DMLocalToLocalEnd(user->da, L, INSERT_VALUES, L);
+	DMDAVecGetArray(da,  L,  &grad_level);
 
 	for(k=zs; k<ze; k++)
 	for(j=ys; j<ye; j++)
@@ -306,24 +306,24 @@ void Distance_Function_RHS (UserCtx *user, Vec Levelset_RHS, int wall_distance)
 		if(!wall_distance) rhs[k][j][i] += correction;	// Sussman Fetami
 	}
 
-	DAVecRestoreArray(da,	 L,	 &grad_level);
-	DAVecRestoreArray(fda, Csi,	&csi);
-	DAVecRestoreArray(fda, Eta,	&eta);
-	DAVecRestoreArray(fda, Zet,	&zet);
-	DAVecRestoreArray(da,	 Aj,	&aj);
-	DAVecRestoreArray(da,	user->lNvert,	&nvert);
-	DAVecRestoreArray(da,	user->lLevelset, &level);
-	DAVecRestoreArray(da,	lLevelset0,	&level0);
-	DAVecRestoreArray(da,	Levelset_RHS,	&rhs);
+	DMDAVecRestoreArray(da,	 L,	 &grad_level);
+	DMDAVecRestoreArray(fda, Csi,	&csi);
+	DMDAVecRestoreArray(fda, Eta,	&eta);
+	DMDAVecRestoreArray(fda, Zet,	&zet);
+	DMDAVecRestoreArray(da,	 Aj,	&aj);
+	DMDAVecRestoreArray(da,	user->lNvert,	&nvert);
+	DMDAVecRestoreArray(da,	user->lLevelset, &level);
+	DMDAVecRestoreArray(da,	lLevelset0,	&level0);
+	DMDAVecRestoreArray(da,	Levelset_RHS,	&rhs);
 	
-	VecDestroy(L);
-	VecDestroy(lLevelset0);
+	VecDestroy(&L);
+	VecDestroy(&lLevelset0);
 }
 
 void Distance_Function_IC(UserCtx	*user)
 {
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info;
 	PetscInt	xs,	xe,	ys,	ye,	zs,	ze;	// Local grid	information
 	PetscInt	mx,	my,	mz;	// Dimensions	in three directions
 	PetscInt	i, j,	k, ibi;
@@ -331,7 +331,7 @@ void Distance_Function_IC(UserCtx	*user)
 	Cmpnts	***csi,	***eta,	***zet;
 	PetscReal	***nvert,	***L0, ***aj;
 
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx;	my = info.my;	mz = info.mz;
 	xs = info.xs;	xe = xs	+	info.xm;
 	ys = info.ys;	ye = ys	+	info.ym;
@@ -349,13 +349,13 @@ void Distance_Function_IC(UserCtx	*user)
 	if (ye==my)	lye	=	ye-1;
 	if (ze==mz)	lze	=	ze-1;
 
-	DAVecGetArray(da,	user->lNvert,	&nvert);
-	DAVecGetArray(da,	LevelSet0, &L0);
+	DMDAVecGetArray(da,	user->lNvert,	&nvert);
+	DMDAVecGetArray(da,	LevelSet0, &L0);
 	
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
-	DAVecGetArray(da,	user->lAj, &aj);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(da,	user->lAj, &aj);
 	
 	
 	if(immersed)
@@ -429,15 +429,15 @@ void Distance_Function_IC(UserCtx	*user)
 
 	
 	
-	DAVecRestoreArray(da,	user->lNvert,	&nvert);
-	DAVecRestoreArray(da,	LevelSet0, &L0);
+	DMDAVecRestoreArray(da,	user->lNvert,	&nvert);
+	DMDAVecRestoreArray(da,	LevelSet0, &L0);
 	
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);
-	DAVecRestoreArray(da,	user->lAj, &aj);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);
+	DMDAVecRestoreArray(da,	user->lAj, &aj);
 	
-	//DALocalToGlobal(da,	lLevelSet0,	INSERT_VALUES, LevelSet);	// copy
+	//DMLocalToGlobal(da,	lLevelSet0,	INSERT_VALUES, LevelSet);	// copy
 	//VecCopy	(LevelSet, LevelSet_o);	
 	VecCopy	(LevelSet0,	LevelSet); 
 	VecCopy	(LevelSet0,	LevelSet_o); 
@@ -447,14 +447,14 @@ PetscErrorCode FormFunction_Distance(SNES	snes,	Vec	L, Vec Rhs,	void *ptr)
 {
 	UserCtx	*user	=	(UserCtx*)ptr;
 
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 	PetscInt	xs,	xe,	ys,	ye,	zs,	ze;	// Local grid	information
 	PetscInt	mx,	my,	mz;	// Dimensions	in three directions
 	PetscInt	i, j,	k;
 	PetscInt	lxs, lxe,	lys, lye,	lzs, lze;
 	PetscReal	***level;
 
-	DAGetLocalInfo(user->da, &info);
+	DMDAGetLocalInfo(user->da, &info);
 	mx = info.mx;	my = info.my;	mz = info.mz;
 	xs = info.xs;	xe = xs	+	info.xm;
 	ys = info.ys;	ye = ys	+	info.ym;
@@ -472,10 +472,10 @@ PetscErrorCode FormFunction_Distance(SNES	snes,	Vec	L, Vec Rhs,	void *ptr)
 	if (ye==my)	lye	=	ye-1;
 	if (ze==mz)	lze	=	ze-1;
 	
-	DAGlobalToLocalBegin(user->da, L,	INSERT_VALUES, user->lLevelset);
-	DAGlobalToLocalEnd(user->da, L,	INSERT_VALUES, user->lLevelset);
+	DMGlobalToLocalBegin(user->da, L,	INSERT_VALUES, user->lLevelset);
+	DMGlobalToLocalEnd(user->da, L,	INSERT_VALUES, user->lLevelset);
 	
-	DAVecGetArray(user->da,	user->lLevelset, &level);
+	DMDAVecGetArray(user->da,	user->lLevelset, &level);
 	
 	if(xs==0 ||	xe==mx)	{
 		int	from,	to;
@@ -551,7 +551,7 @@ PetscErrorCode FormFunction_Distance(SNES	snes,	Vec	L, Vec Rhs,	void *ptr)
 		}
 	}
 	
-	DAVecRestoreArray(user->da,	user->lLevelset, &level);
+	DMDAVecRestoreArray(user->da,	user->lLevelset, &level);
 	
 	Distance_Function_RHS(user,	Rhs, 1);
 	VecAXPY(Rhs, -1/dtau,	L);
@@ -562,14 +562,14 @@ PetscErrorCode FormFunction_Distance(SNES	snes,	Vec	L, Vec Rhs,	void *ptr)
 
 void Solve_Distance_Explicit(UserCtx *user)
 {
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 	PetscInt	xs,	xe,	ys,	ye,	zs,	ze;	// Local grid	information
 	PetscInt	mx,	my,	mz;	// Dimensions	in three directions
 	PetscInt	i, j,	k;
 	PetscInt	lxs, lxe,	lys, lye,	lzs, lze;
 	PetscReal	***level;
 
-	DAGetLocalInfo(user->da, &info);
+	DMDAGetLocalInfo(user->da, &info);
 	mx = info.mx;	my = info.my;	mz = info.mz;
 	xs = info.xs;	xe = xs	+	info.xm;
 	ys = info.ys;	ye = ys	+	info.ym;
@@ -587,10 +587,10 @@ void Solve_Distance_Explicit(UserCtx *user)
 	if (ye==my)	lye	=	ye-1;
 	if (ze==mz)	lze	=	ze-1;
 	
-	DAGlobalToLocalBegin(user->da, LevelSet, INSERT_VALUES,	user->lLevelset);
-	DAGlobalToLocalEnd(user->da, LevelSet, INSERT_VALUES,	user->lLevelset);
+	DMGlobalToLocalBegin(user->da, LevelSet, INSERT_VALUES,	user->lLevelset);
+	DMGlobalToLocalEnd(user->da, LevelSet, INSERT_VALUES,	user->lLevelset);
 	
-	DAVecGetArray(user->da,	user->lLevelset, &level);
+	DMDAVecGetArray(user->da,	user->lLevelset, &level);
 	
 	if(xs==0 ||	xe==mx)	{
 		int	from,	to;
@@ -666,13 +666,13 @@ void Solve_Distance_Explicit(UserCtx *user)
 		}
 	}
 	
-	DAVecRestoreArray(user->da, user->lLevelset, &level);
+	DMDAVecRestoreArray(user->da, user->lLevelset, &level);
 	
 	Vec Rhs;
 	VecDuplicate(user->P, &Rhs);
 	Distance_Function_RHS(user, Rhs, 1);
 	VecAXPY(LevelSet, dtau,	Rhs);
-	VecDestroy(Rhs);
+	VecDestroy(&Rhs);
 	return;
 }
 
@@ -696,7 +696,7 @@ void Solve_Distance(UserCtx	*user, int iter)
 	SNESSetJacobian(snes_distance,J,J,MatMFFDComputeJacobian,(void *)&user[bi]);
 		
 	
-	SNESSetType(snes_distance, SNESTR);			//SNESTR,SNESLS	
+	SNESSetType(snes_distance, SNESNEWTONLS);			//SNESNEWTONLS,SNESLS	
 	double tol=1.e-2;
 	SNESSetMaxLinearSolveFailures(snes_distance,10000);
 	SNESSetMaxNonlinearStepFailures(snes_distance,10000);		
@@ -716,21 +716,21 @@ void Solve_Distance(UserCtx	*user, int iter)
 	KSPSetTolerances(ksp,rtol,atol,dtol,maxits);
 	
 	extern PetscErrorCode	MySNESMonitor(SNES snes,PetscInt n,PetscReal rnorm,void	*dummy);
-	SNESMonitorSet(snes_distance,MySNESMonitor,PETSC_NULL,PETSC_NULL);
-	SNESSolve(snes_distance, PETSC_NULL, LevelSet);
+	SNESMonitorSet(snes_distance,MySNESMonitor,NULL,NULL);
+	SNESSolve(snes_distance, NULL, LevelSet);
 	
 	SNESGetFunctionNorm(snes_distance, &norm);
 	//PetscPrintf(PETSC_COMM_WORLD,	"\nDistance	SNES residual	norm=%.5e\n\n",	norm);
-	VecDestroy(r);
-	MatDestroy(J);
-	SNESDestroy(snes_distance);
+	VecDestroy(&r);
+	MatDestroy(&J);
+	SNESDestroy(&snes_distance);
 };
 
 void Compute_Distance_Function(UserCtx *user)
 {
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 	PetscInt	i, j,	k;
-	DAGetLocalInfo(user->da, &info);
+	DMDAGetLocalInfo(user->da, &info);
 	PetscInt	mx = info.mx,	my = info.my,	mz = info.mz;
 	PetscInt	xs = info.xs,	xe = xs	+	info.xm;
 	PetscInt	ys = info.ys,	ye = ys	+	info.ym;
@@ -771,11 +771,11 @@ void Compute_Distance_Function(UserCtx *user)
 		PetscPrintf(PETSC_COMM_WORLD, "\nNorm=%.5e\n\n", norm);
 		
 		PetscReal ***level;
-		DAVecGetArray(user->da, LevelSet, &level);
+		DMDAVecGetArray(user->da, LevelSet, &level);
 		for	(k=zs; k<ze; k++)
 		for	(j=ys; j<ye; j++)
 		for	(i=xs; i<xe; i++)	if(level[k][j][i]<0) level[k][j][i]=0.01;
-		DAVecRestoreArray(user->da, LevelSet, &level);
+		DMDAVecRestoreArray(user->da, LevelSet, &level);
 	
 		if(iter > 10 && (fabs(norm)<1.e-5 || iter>1000) ) break;
 		//if(iter>10 && iter%50==0) dtau *=1.04;
@@ -783,17 +783,17 @@ void Compute_Distance_Function(UserCtx *user)
 		
 		iter++;
 	}	while(1);
-	VecDestroy(D);
+	VecDestroy(&D);
 	
 	Vec	lLevelset;
 	PetscReal	***llevel;
 	VecDuplicate(user->lP, &lLevelset);
 
-	DAGlobalToLocalBegin(user->da, LevelSet, INSERT_VALUES,	lLevelset);
-	DAGlobalToLocalEnd(user->da, LevelSet, INSERT_VALUES,	lLevelset);
+	DMGlobalToLocalBegin(user->da, LevelSet, INSERT_VALUES,	lLevelset);
+	DMGlobalToLocalEnd(user->da, LevelSet, INSERT_VALUES,	lLevelset);
 
-	DAVecGetArray(user->da,	LevelSet,	&level);
-	DAVecGetArray(user->da,	lLevelset, &llevel);
+	DMDAVecGetArray(user->da,	LevelSet,	&level);
+	DMDAVecGetArray(user->da,	lLevelset, &llevel);
 
 	for	(k=zs; k<ze; k++)
 	for	(j=ys; j<ye; j++)
@@ -829,10 +829,10 @@ void Compute_Distance_Function(UserCtx *user)
 		
 		if(flag) level[k][j][i]	=	llevel[c][b][a];
 	}
-	DAVecRestoreArray(user->da,	LevelSet,	&level);
-	DAVecRestoreArray(user->da,	lLevelset, &llevel);
+	DMDAVecRestoreArray(user->da,	LevelSet,	&level);
+	DMDAVecRestoreArray(user->da,	lLevelset, &llevel);
 
-	VecDestroy(lLevelset);
+	VecDestroy(&lLevelset);
 	VecCopy(LevelSet,	user->Distance);	
 	Destroy_LevelSet_Vectors(user);
 };

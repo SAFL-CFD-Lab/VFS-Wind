@@ -62,7 +62,7 @@ PetscErrorCode ibm_read(IBMNodes *ibm1, IBMNodes *ibm2)
 
   if(!rank) { // root processor read in the data
     FILE *fd;
-    fd = fopen("ibmdata0", "r"); if (!fd) SETERRQ(1, "Cannot open IBM node file")
+    fd = fopen("ibmdata0", "r"); if (!fd) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_OPEN, "Cannot open IBM node file");
     n_v =0;
     fscanf(fd, "%i", &n_v);
     fscanf(fd, "%i", &n_v);
@@ -806,7 +806,7 @@ PetscErrorCode ibm_read_ucd(IBMNodes *ibm, PetscInt ibi)
     char filen[80];  
     sprintf(filen,"%s/ibmdata%2.2d" , path, ibi);
  
-    fd = fopen(filen, "r"); if (!fd) SETERRQ(1, "Cannot open IBM node file")
+    fd = fopen(filen, "r"); if (!fd) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_OPEN, "Cannot open IBM node file");
     n_v =0;
 
     if (fd) {
@@ -1295,7 +1295,7 @@ PetscErrorCode ibm_read_ucd_old(IBMNodes *ibm)
   if(!rank) { // root processor read in the data
     FILE *fd;
     fd = fopen("ibmdata", "r");
-    if (!fd) SETERRQ(1, "Cannot open IBM node file")
+    if (!fd) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_OPEN, "Cannot open IBM node file");
     n_v =0;
 
     if (fd) {
@@ -1327,7 +1327,7 @@ PetscErrorCode ibm_read_ucd_old(IBMNodes *ibm)
       
       PetscReal cl = 1.;
 
-      PetscOptionsGetReal(PETSC_NULL, "-chact_leng_valve", &cl, PETSC_NULL);
+      PetscOptionsGetReal(NULL, NULL, "-chact_leng_valve", &cl, NULL);
       
       for (i=0; i<n_v; i++) {
 	fscanf(fd, "%i %le %le %le", &temp, &x_bp[i], &y_bp[i], &z_bp[i]);

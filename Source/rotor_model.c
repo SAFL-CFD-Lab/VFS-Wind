@@ -1322,12 +1322,12 @@ PetscErrorCode Pre_process_save3(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 {
 
 	PetscReal ts1, te1;
-  PetscGetTime(&ts1);  
+  PetscTime(&ts1);  
 
-  	PetscBarrier(PETSC_NULL);
+  	PetscBarrier(NULL);
 
-  	DA              da = user->da, fda = user->fda;
-  	DALocalInfo  	info;
+  	DM              da = user->da, fda = user->fda;
+  	DMDALocalInfo  	info;
   	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
   	PetscInt        mx, my, mz; // Dimensions in three directions
   	PetscInt        i, j, k, l, ibi;
@@ -1340,7 +1340,7 @@ PetscErrorCode Pre_process_save3(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
   	Vec		Coor;
 
 
-  	DAGetLocalInfo(da, &info);
+  	DMDAGetLocalInfo(da, &info);
   	mx = info.mx; my = info.my; mz = info.mz;
   	xs = info.xs; xe = xs + info.xm;
   	ys = info.ys; ye = ys + info.ym;
@@ -1364,13 +1364,13 @@ PetscErrorCode Pre_process_save3(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 	int *sum_iclose, *sum_jclose, *sum_kclose;
 
 
-  	DAGetGhostedCoordinates(da, &Coor);
-  	DAVecGetArray(fda, Coor, &coor);
+  	DMGetCoordinatesLocal(da, &Coor);
+  	DMDAVecGetArray(fda, Coor, &coor);
 
-  	DAVecGetArray(fda, user->lCsi,  &csi);
-  	DAVecGetArray(fda, user->lEta,  &eta);
-  	DAVecGetArray(fda, user->lZet,  &zet);
-  	DAVecGetArray(da,  user->lAj,  &aj);
+  	DMDAVecGetArray(fda, user->lCsi,  &csi);
+  	DMDAVecGetArray(fda, user->lEta,  &eta);
+  	DMDAVecGetArray(fda, user->lZet,  &zet);
+  	DMDAVecGetArray(da,  user->lAj,  &aj);
 
 
   	int n1e, n2e, n3e;
@@ -1398,10 +1398,10 @@ PetscErrorCode Pre_process_save3(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 
 		}
 
-	  	PetscBarrier(PETSC_NULL);
+	  	PetscBarrier(NULL);
 
 	PetscReal ts2, te2;
-        PetscGetTime(&ts2);  
+        PetscTime(&ts2);  
 
 		int count[ibm[ibi].n_elmt], sum_count[ibm[ibi].n_elmt];
 	        for (l=0; l<ibm[ibi].n_elmt; l++) {
@@ -1448,14 +1448,14 @@ PetscErrorCode Pre_process_save3(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 			}
 
 	        }
-	  	PetscBarrier(PETSC_NULL);
-        PetscGetTime(&te2);  
+	  	PetscBarrier(NULL);
+        PetscTime(&te2);  
       	PetscPrintf(PETSC_COMM_WORLD, "Time for finding the closest  %le\n", te2-ts2);
 
 
 
 
-	  	PetscBarrier(PETSC_NULL);
+	  	PetscBarrier(NULL);
 
 		MPI_Allreduce (&iclose[0], &sum_iclose[0], ibm[ibi].n_elmt, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
 		MPI_Allreduce (&jclose[0], &sum_jclose[0], ibm[ibi].n_elmt, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
@@ -1526,16 +1526,16 @@ PetscErrorCode Pre_process_save3(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 
 	}
 
-  	DAVecRestoreArray(fda, Coor, &coor);
+  	DMDAVecRestoreArray(fda, Coor, &coor);
 
-	DAVecRestoreArray(fda, user->lCsi,  &csi);
-  	DAVecRestoreArray(fda, user->lEta,  &eta);
-  	DAVecRestoreArray(fda, user->lZet,  &zet);
-  	DAVecRestoreArray(da,  user->lAj,  &aj);
+	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+  	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 
-  	PetscBarrier(PETSC_NULL);
+  	PetscBarrier(NULL);
 
-        PetscGetTime(&te1);  
+        PetscTime(&te1);  
       	PetscPrintf(PETSC_COMM_WORLD, "Time for rotor model search  %le\n", te1-ts1);
 
   	return(0);
@@ -1553,10 +1553,10 @@ PetscErrorCode Pre_process_save2(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 {
 
 	PetscReal ts1, te1;
-	PetscGetTime(&ts1);  
-	PetscBarrier(PETSC_NULL);
-	DA              da = user->da, fda = user->fda;
-	DALocalInfo  	info;
+	PetscTime(&ts1);  
+	PetscBarrier(NULL);
+	DM              da = user->da, fda = user->fda;
+	DMDALocalInfo  	info;
 	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt        mx, my, mz; // Dimensions in three directions
 	PetscInt        i, j, k, l, ibi;
@@ -1564,7 +1564,7 @@ PetscErrorCode Pre_process_save2(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 	Cmpnts		***coor, ***csi, ***eta, ***zet;
 	PetscReal 	***aj;
 	Vec		Coor;
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1582,12 +1582,12 @@ PetscErrorCode Pre_process_save2(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 	int *iclose, *jclose, *kclose;
 	double *sum_dhx_, *sum_dhy_, *sum_dhz_;
 	int *sum_iclose, *sum_jclose, *sum_kclose;
-	DAGetGhostedCoordinates(da, &Coor);
-	DAVecGetArray(fda, Coor, &coor);
-	DAVecGetArray(fda, user->lCsi,  &csi);
-	DAVecGetArray(fda, user->lEta,  &eta);
-	DAVecGetArray(fda, user->lZet,  &zet);
-	DAVecGetArray(da,  user->lAj,  &aj);
+	DMGetCoordinatesLocal(da, &Coor);
+	DMDAVecGetArray(fda, Coor, &coor);
+	DMDAVecGetArray(fda, user->lCsi,  &csi);
+	DMDAVecGetArray(fda, user->lEta,  &eta);
+	DMDAVecGetArray(fda, user->lZet,  &zet);
+	DMDAVecGetArray(da,  user->lAj,  &aj);
 	int n1e, n2e, n3e;
 	for (ibi=0; ibi<NumberOfObjects; ibi++) {
 
@@ -1669,7 +1669,7 @@ PetscErrorCode Pre_process_save2(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 
 
 
-	  	PetscBarrier(PETSC_NULL);
+	  	PetscBarrier(NULL);
 
 		MPI_Allreduce (&dhx_[0], &sum_dhx_[0], ibm[ibi].n_elmt, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
 		MPI_Allreduce (&dhy_[0], &sum_dhy_[0], ibm[ibi].n_elmt, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
@@ -1826,16 +1826,16 @@ PetscErrorCode Pre_process_save2(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 
 	}
 
-  	DAVecRestoreArray(fda, Coor, &coor);
+  	DMDAVecRestoreArray(fda, Coor, &coor);
 
-	DAVecRestoreArray(fda, user->lCsi,  &csi);
-  	DAVecRestoreArray(fda, user->lEta,  &eta);
-  	DAVecRestoreArray(fda, user->lZet,  &zet);
-  	DAVecRestoreArray(da,  user->lAj,  &aj);
+	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+  	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 
-  	PetscBarrier(PETSC_NULL);
+  	PetscBarrier(NULL);
 
-        PetscGetTime(&te1);  
+        PetscTime(&te1);  
       	PetscPrintf(PETSC_COMM_WORLD, "Time for rotor model search  %le\n", te1-ts1);
 
   	return(0);
@@ -1848,8 +1848,8 @@ PetscErrorCode Pre_process_save2(UserCtx *user, IBMNodes *ibm, int NumberOfObjec
 // Call in main.c, after reading the grid for turbines
 PetscErrorCode Pre_process(UserCtx *user, IBMNodes *ibm, int NumberOfObjects)
 {
-	DA              da = user->da, fda = user->fda;
-	DALocalInfo  	info;
+	DM              da = user->da, fda = user->fda;
+	DMDALocalInfo  	info;
 	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt        mx, my, mz; // Dimensions in three directions
 	PetscInt        i, j, k, l, ibi;
@@ -1857,7 +1857,7 @@ PetscErrorCode Pre_process(UserCtx *user, IBMNodes *ibm, int NumberOfObjects)
 	Cmpnts		***coor, ***csi, ***eta, ***zet;
 	PetscReal 	***aj;
 	Vec		Coor;
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1871,13 +1871,13 @@ PetscErrorCode Pre_process(UserCtx *user, IBMNodes *ibm, int NumberOfObjects)
 	if (xe==mx) lxe = xe-1;
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
-	DAGetGhostedCoordinates(da, &Coor);
-	DAVecGetArray(fda, Coor, &coor);
+	DMGetCoordinatesLocal(da, &Coor);
+	DMDAVecGetArray(fda, Coor, &coor);
 
-	DAVecGetArray(fda, user->lCsi,  &csi);
-	DAVecGetArray(fda, user->lEta,  &eta);
-	DAVecGetArray(fda, user->lZet,  &zet);
-	DAVecGetArray(da,  user->lAj,  &aj);
+	DMDAVecGetArray(fda, user->lCsi,  &csi);
+	DMDAVecGetArray(fda, user->lEta,  &eta);
+	DMDAVecGetArray(fda, user->lZet,  &zet);
+	DMDAVecGetArray(da,  user->lAj,  &aj);
 
 	int n1e, n2e, n3e;
 
@@ -1953,7 +1953,7 @@ PetscErrorCode Pre_process(UserCtx *user, IBMNodes *ibm, int NumberOfObjects)
 				i=ic; j=jc; k=kc;
 			}
 		}
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 		MPI_Allreduce (&iclose[0], &sum_iclose[0], ibm[ibi].n_elmt, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
 		MPI_Allreduce (&jclose[0], &sum_jclose[0], ibm[ibi].n_elmt, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
 		MPI_Allreduce (&kclose[0], &sum_kclose[0], ibm[ibi].n_elmt, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
@@ -2002,11 +2002,11 @@ PetscErrorCode Pre_process(UserCtx *user, IBMNodes *ibm, int NumberOfObjects)
 			}
 		}
 	}
-	DAVecRestoreArray(fda, Coor, &coor);
-	DAVecRestoreArray(fda, user->lCsi,  &csi);
-	DAVecRestoreArray(fda, user->lEta,  &eta);
-	DAVecRestoreArray(fda, user->lZet,  &zet);
-	DAVecRestoreArray(da,  user->lAj,  &aj);
+	DMDAVecRestoreArray(fda, Coor, &coor);
+	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 	return(0);
 }
 
@@ -2688,8 +2688,8 @@ PetscErrorCode Calc_F_lagr_ACL(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, ACL *a
 PetscErrorCode Calc_Tmprt_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int NumberOfObjects)
 {
 
-  	DA              da = user->da, fda = user->fda;
-  	DALocalInfo     info;
+  	DM              da = user->da, fda = user->fda;
+  	DMDALocalInfo     info;
   	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
   	PetscInt        mx, my, mz; // Dimensions in three directions
   	PetscInt        i, j, k, l, ibi;
@@ -2709,7 +2709,7 @@ PetscErrorCode Calc_Tmprt_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Nu
 
   	double r1, r2, r3;
 
-  	DAGetLocalInfo(da, &info);
+  	DMDAGetLocalInfo(da, &info);
   	mx = info.mx; my = info.my; mz = info.mz;
   	xs = info.xs; xe = xs + info.xm;
   	ys = info.ys; ye = ys + info.ym;
@@ -2728,13 +2728,13 @@ PetscErrorCode Calc_Tmprt_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Nu
   	if (ze==mz) lze = ze-1;
 
 
-  	DAGetGhostedCoordinates(da, &Coor);
-  	DAVecGetArray(fda, Coor, &coor);
-  	DAVecGetArray(da, user->lTmprt, &tmprt);
-  	DAVecGetArray(fda, user->lCsi,  &csi);
-  	DAVecGetArray(fda, user->lEta,  &eta);
-  	DAVecGetArray(fda, user->lZet,  &zet);
-  	DAVecGetArray(da,  user->lAj,  &aj);
+  	DMGetCoordinatesLocal(da, &Coor);
+  	DMDAVecGetArray(fda, Coor, &coor);
+  	DMDAVecGetArray(da, user->lTmprt, &tmprt);
+  	DMDAVecGetArray(fda, user->lCsi,  &csi);
+  	DMDAVecGetArray(fda, user->lEta,  &eta);
+  	DMDAVecGetArray(fda, user->lZet,  &zet);
+  	DMDAVecGetArray(da,  user->lAj,  &aj);
 
   	for (ibi=0; ibi<NumberOfObjects; ibi++) {
     	for (l=0; l<ibm[ibi].n_elmt; l++) {
@@ -2796,7 +2796,7 @@ PetscErrorCode Calc_Tmprt_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Nu
 
 
 
-  	PetscBarrier(PETSC_NULL);
+  	PetscBarrier(NULL);
 
         start = clock();
   	for (ibi=0; ibi<NumberOfObjects; ibi++)  {
@@ -2814,14 +2814,14 @@ PetscErrorCode Calc_Tmprt_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Nu
         		ibm[ibi].Tmprt_lagr[i] = tmprt_sum[i];
 	  	}
 
-	  	PetscBarrier(PETSC_NULL);
+	  	PetscBarrier(NULL);
 	}
 
         end = clock();
         elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
 
         PetscPrintf(PETSC_COMM_WORLD, "Time for U_larg global sum %le \n", elapsed);
-  	PetscBarrier(PETSC_NULL);
+  	PetscBarrier(NULL);
 
         PetscPrintf(PETSC_COMM_WORLD, "Tmprt_lagr at ibi %d, i %d = %le \n", 0,0,ibm[0].Tmprt_lagr[0]);
 
@@ -2917,12 +2917,12 @@ PetscErrorCode Calc_Tmprt_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Nu
 	}
 
 
-  	DAVecRestoreArray(fda, Coor, &coor);
-  	DAVecRestoreArray(da, user->lTmprt, &tmprt);
-  	DAVecRestoreArray(fda, user->lCsi,  &csi);
-  	DAVecRestoreArray(fda, user->lEta,  &eta);
-  	DAVecRestoreArray(fda, user->lZet,  &zet);
-  	DAVecRestoreArray(da,  user->lAj,  &aj);
+  	DMDAVecRestoreArray(fda, Coor, &coor);
+  	DMDAVecRestoreArray(da, user->lTmprt, &tmprt);
+  	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+  	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 
 	return(0);
 }
@@ -2936,8 +2936,8 @@ PetscErrorCode Calc_Tmprt_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Nu
 // subroutine for Calc_F_lagr_ACL and Calc_F_lagr
 PetscErrorCode Calc_U_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int NumberOfObjects)
 {
-	DA              da = user->da, fda = user->fda;
-	DALocalInfo     info;
+	DM              da = user->da, fda = user->fda;
+	DMDALocalInfo     info;
 	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt        mx, my, mz; // Dimensions in three directions
 	PetscInt        i, j, k, l, ibi;
@@ -2948,7 +2948,7 @@ PetscErrorCode Calc_U_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Number
 	PetscReal	dfunc;
 	PetscReal	xc, yc, zc, hx, hy, hz, vol_eul, vol_lagr;
 	double r1, r2, r3;
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -2962,13 +2962,13 @@ PetscErrorCode Calc_U_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Number
 	if (xe==mx) lxe = xe-1;
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
-	DAGetGhostedCoordinates(da, &Coor);
-	DAVecGetArray(fda, Coor, &coor);
-	DAVecGetArray(fda, user->lUcat, &ucat);
-	DAVecGetArray(fda, user->lCsi,  &csi);
-	DAVecGetArray(fda, user->lEta,  &eta);
-	DAVecGetArray(fda, user->lZet,  &zet);
-	DAVecGetArray(da,  user->lAj,  &aj);
+	DMGetCoordinatesLocal(da, &Coor);
+	DMDAVecGetArray(fda, Coor, &coor);
+	DMDAVecGetArray(fda, user->lUcat, &ucat);
+	DMDAVecGetArray(fda, user->lCsi,  &csi);
+	DMDAVecGetArray(fda, user->lEta,  &eta);
+	DMDAVecGetArray(fda, user->lZet,  &zet);
+	DMDAVecGetArray(da,  user->lAj,  &aj);
 
 	for (ibi=0; ibi<NumberOfObjects; ibi++) {
 		for (l=0; l<ibm[ibi].n_elmt; l++) {
@@ -3023,7 +3023,7 @@ PetscErrorCode Calc_U_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Number
 	end = clock();
 	elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
 	PetscPrintf(PETSC_COMM_WORLD, "Time for U_larg local %le \n", elapsed);
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	start = clock();
 	for (ibi=0; ibi<NumberOfObjects; ibi++)  {
 		std::vector<Cmpnts> u_local (ibm[ibi].n_elmt); 
@@ -3039,12 +3039,12 @@ PetscErrorCode Calc_U_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Number
 			ibm[ibi].U_lagr_y[i] = u_sum[i].y;
 			ibm[ibi].U_lagr_z[i] = u_sum[i].z;
 		}
-		PetscBarrier(PETSC_NULL);
+		PetscBarrier(NULL);
 	}
 	end = clock();
 	elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
 	PetscPrintf(PETSC_COMM_WORLD, "Time for U_larg global sum %le \n", elapsed);
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 
 	if (ii_periodicWT || jj_periodicWT || kk_periodicWT) {
 		double xc_min = 1.0e6;        
@@ -3136,12 +3136,12 @@ PetscErrorCode Calc_U_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Number
 			ibm[ibi].U_lagr_z[l] += w_frame;
 		}
 	}
-	DAVecRestoreArray(fda, Coor, &coor);
-	DAVecRestoreArray(fda, user->lUcat, &ucat);
-	DAVecRestoreArray(fda, user->lCsi,  &csi);
-	DAVecRestoreArray(fda, user->lEta,  &eta);
-	DAVecRestoreArray(fda, user->lZet,  &zet);
-	DAVecRestoreArray(da,  user->lAj,  &aj);
+	DMDAVecRestoreArray(fda, Coor, &coor);
+	DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 	return(0);
 }
 
@@ -3151,8 +3151,8 @@ PetscErrorCode Calc_U_lagr(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Number
 PetscErrorCode Calc_F_eul_old(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int NumberOfObjects, double dh, int df)
 {
 
-  	DA              da = user->da, fda = user->fda;
-  	DALocalInfo     info;
+  	DM              da = user->da, fda = user->fda;
+  	DMDALocalInfo     info;
   	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
   	PetscInt        mx, my, mz; // Dimensions in three directions
   	PetscInt        i, j, k, l, ibi;
@@ -3170,7 +3170,7 @@ PetscErrorCode Calc_F_eul_old(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Num
 
   	double r1, r2, r3;
 
-  	DAGetLocalInfo(da, &info);
+  	DMDAGetLocalInfo(da, &info);
   	mx = info.mx; my = info.my; mz = info.mz;
   	xs = info.xs; xe = xs + info.xm;
   	ys = info.ys; ye = ys + info.ym;
@@ -3190,15 +3190,15 @@ PetscErrorCode Calc_F_eul_old(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Num
   	if (ze==mz) lze = ze-1;
 
 
-  	DAGetGhostedCoordinates(da, &Coor);
-  	DAVecGetArray(fda, Coor, &coor);
-  	DAVecGetArray(fda, user->lF_eul, &lf_eul);
-  	DAVecGetArray(fda, user->lCsi,  &csi);
-  	DAVecGetArray(fda, user->lEta,  &eta);
-  	DAVecGetArray(fda, user->lZet,  &zet);
-  	DAVecGetArray(da,  user->lAj,  &aj);
+  	DMGetCoordinatesLocal(da, &Coor);
+  	DMDAVecGetArray(fda, Coor, &coor);
+  	DMDAVecGetArray(fda, user->lF_eul, &lf_eul);
+  	DMDAVecGetArray(fda, user->lCsi,  &csi);
+  	DMDAVecGetArray(fda, user->lEta,  &eta);
+  	DMDAVecGetArray(fda, user->lZet,  &zet);
+  	DMDAVecGetArray(da,  user->lAj,  &aj);
 
-	DAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
 
   	double ni[3], nj[3], nk[3];
   	for (ibi=0; ibi<NumberOfObjects; ibi++) {
@@ -3430,21 +3430,21 @@ PetscErrorCode Calc_F_eul_old(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Num
 
 	}
   
- 	DAVecRestoreArray(fda, Coor, &coor);
-  	DAVecRestoreArray(fda, user->lF_eul, &lf_eul);
-  	DAVecRestoreArray(fda, user->lCsi,  &csi);
-  	DAVecRestoreArray(fda, user->lEta,  &eta);
-  	DAVecRestoreArray(fda, user->lZet,  &zet);
-  	DAVecRestoreArray(da,  user->lAj,  &aj);
+ 	DMDAVecRestoreArray(fda, Coor, &coor);
+  	DMDAVecRestoreArray(fda, user->lF_eul, &lf_eul);
+  	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+  	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 
-	DAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
-	DALocalToGlobal(fda, user->lF_eul, INSERT_VALUES, user->F_eul);
+	DMLocalToGlobal(fda, user->lF_eul, INSERT_VALUES, user->F_eul);
 
 
 	/*
-	DAVecGetArray(fda, user->lF_eul, &lf_eul);
-	DAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(fda, user->lF_eul, &lf_eul);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
 	for (k=lzs;k<lze;k++) 
 	for (j=lys;j<lye;j++) 
 	for (i=lxs;i<lxe;i++) {
@@ -3452,8 +3452,8 @@ PetscErrorCode Calc_F_eul_old(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int Num
 			nvert[k][j][i]:
 		}
 	}
-  	DAVecRestoreArray(fda, user->lF_eul, &lf_eul);
-	DAVecRestoreArray(da, user->lNvert, &nvert);
+  	DMDAVecRestoreArray(fda, user->lF_eul, &lf_eul);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
 	*/
 
 	
@@ -3480,11 +3480,11 @@ PetscErrorCode Calc_Ftmprt_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscI
 	//MPI_Comm_rank(PETSC_COMM_WORLD, &my_rank);
 
 
-        //PetscGetTime(&ts);  // xiaolei
+        //PetscTime(&ts);  // xiaolei
 
 
-  	DA              da = user->da, fda = user->fda;
-  	DALocalInfo     info;
+  	DM              da = user->da, fda = user->fda;
+  	DMDALocalInfo     info;
   	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
   	PetscInt        mx, my, mz; // Dimensions in three directions
   	PetscInt        i, j, k, l, ibi;
@@ -3504,7 +3504,7 @@ PetscErrorCode Calc_Ftmprt_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscI
 
   	double r1, r2, r3;
 
-  	DAGetLocalInfo(da, &info);
+  	DMDAGetLocalInfo(da, &info);
   	mx = info.mx; my = info.my; mz = info.mz;
   	xs = info.xs; xe = xs + info.xm;
   	ys = info.ys; ye = ys + info.ym;
@@ -3524,15 +3524,15 @@ PetscErrorCode Calc_Ftmprt_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscI
   	if (ze==mz) lze = ze-1;
 
 
-  	DAGetGhostedCoordinates(da, &Coor);
-  	DAVecGetArray(fda, Coor, &coor);
-  	DAVecGetArray(da, user->lFtmprt_eul, &lftmprt_eul);
-  	DAVecGetArray(fda, user->lCsi,  &csi);
-  	DAVecGetArray(fda, user->lEta,  &eta);
-  	DAVecGetArray(fda, user->lZet,  &zet);
-  	DAVecGetArray(da,  user->lAj,  &aj);
+  	DMGetCoordinatesLocal(da, &Coor);
+  	DMDAVecGetArray(fda, Coor, &coor);
+  	DMDAVecGetArray(da, user->lFtmprt_eul, &lftmprt_eul);
+  	DMDAVecGetArray(fda, user->lCsi,  &csi);
+  	DMDAVecGetArray(fda, user->lEta,  &eta);
+  	DMDAVecGetArray(fda, user->lZet,  &zet);
+  	DMDAVecGetArray(da,  user->lAj,  &aj);
 
-	DAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
 
 
   	double ni[3], nj[3], nk[3];
@@ -3635,18 +3635,18 @@ PetscErrorCode Calc_Ftmprt_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscI
 
 	}
   
- 	DAVecRestoreArray(fda, Coor, &coor);
-  	DAVecRestoreArray(da, user->lFtmprt_eul, &lftmprt_eul);
-  	DAVecRestoreArray(fda, user->lCsi,  &csi);
-  	DAVecRestoreArray(fda, user->lEta,  &eta);
-  	DAVecRestoreArray(fda, user->lZet,  &zet);
-  	DAVecRestoreArray(da,  user->lAj,  &aj);
+ 	DMDAVecRestoreArray(fda, Coor, &coor);
+  	DMDAVecRestoreArray(da, user->lFtmprt_eul, &lftmprt_eul);
+  	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+  	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 
-	DAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
-	DALocalToLocalBegin(da, user->lFtmprt_eul, INSERT_VALUES, user->lFtmprt_eul);
-	DALocalToLocalEnd(da, user->lFtmprt_eul, INSERT_VALUES, user->lFtmprt_eul);
-	DALocalToGlobal(da, user->lFtmprt_eul, INSERT_VALUES, user->lFtmprt_eul);	
+	DMLocalToLocalBegin(da, user->lFtmprt_eul, INSERT_VALUES, user->lFtmprt_eul);
+	DMLocalToLocalEnd(da, user->lFtmprt_eul, INSERT_VALUES, user->lFtmprt_eul);
+	DMLocalToGlobal(da, user->lFtmprt_eul, INSERT_VALUES, user->lFtmprt_eul);	
 
 	//if (ti==tistart || ti%tiout==0) {
 	//	char fname[80];
@@ -3674,11 +3674,11 @@ PetscErrorCode Calc_F_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscInt Nu
 	//MPI_Comm_rank(PETSC_COMM_WORLD, &my_rank);
 
 
-        //PetscGetTime(&ts);  // xiaolei
+        //PetscTime(&ts);  // xiaolei
 
 
-  	DA              da = user->da, fda = user->fda;
-  	DALocalInfo     info;
+  	DM              da = user->da, fda = user->fda;
+  	DMDALocalInfo     info;
   	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
   	PetscInt        mx, my, mz; // Dimensions in three directions
   	PetscInt        i, j, k, l, ibi;
@@ -3696,7 +3696,7 @@ PetscErrorCode Calc_F_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscInt Nu
 
   	double r1, r2, r3;
 
-  	DAGetLocalInfo(da, &info);
+  	DMDAGetLocalInfo(da, &info);
   	mx = info.mx; my = info.my; mz = info.mz;
   	xs = info.xs; xe = xs + info.xm;
   	ys = info.ys; ye = ys + info.ym;
@@ -3716,15 +3716,15 @@ PetscErrorCode Calc_F_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscInt Nu
   	if (ze==mz) lze = ze-1;
 
 
-  	DAGetGhostedCoordinates(da, &Coor);
-  	DAVecGetArray(fda, Coor, &coor);
-  	DAVecGetArray(fda, user->lF_eul, &lf_eul);
-  	DAVecGetArray(fda, user->lCsi,  &csi);
-  	DAVecGetArray(fda, user->lEta,  &eta);
-  	DAVecGetArray(fda, user->lZet,  &zet);
-  	DAVecGetArray(da,  user->lAj,  &aj);
+  	DMGetCoordinatesLocal(da, &Coor);
+  	DMDAVecGetArray(fda, Coor, &coor);
+  	DMDAVecGetArray(fda, user->lF_eul, &lf_eul);
+  	DMDAVecGetArray(fda, user->lCsi,  &csi);
+  	DMDAVecGetArray(fda, user->lEta,  &eta);
+  	DMDAVecGetArray(fda, user->lZet,  &zet);
+  	DMDAVecGetArray(da,  user->lAj,  &aj);
 
-	DAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
 
 
   	double ni[3], nj[3], nk[3];
@@ -3928,25 +3928,25 @@ PetscErrorCode Calc_F_eul(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, PetscInt Nu
 
 	}
   
- 	DAVecRestoreArray(fda, Coor, &coor);
-  	DAVecRestoreArray(fda, user->lF_eul, &lf_eul);
-  	DAVecRestoreArray(fda, user->lCsi,  &csi);
-  	DAVecRestoreArray(fda, user->lEta,  &eta);
-  	DAVecRestoreArray(fda, user->lZet,  &zet);
-  	DAVecRestoreArray(da,  user->lAj,  &aj);
+ 	DMDAVecRestoreArray(fda, Coor, &coor);
+  	DMDAVecRestoreArray(fda, user->lF_eul, &lf_eul);
+  	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+  	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 
-	DAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
 
-        //PetscGetTime(&te);  // xiaolei
+        //PetscTime(&te);  // xiaolei
       	//printf( "rank %d Time for F_eul  %le\n", my_rank, te-ts);
 
-	DALocalToLocalBegin(fda, user->lF_eul, INSERT_VALUES, user->lF_eul);
-	DALocalToLocalEnd(fda, user->lF_eul, INSERT_VALUES, user->lF_eul);
-	DALocalToGlobal(fda, user->lF_eul, INSERT_VALUES, user->F_eul);
+	DMLocalToLocalBegin(fda, user->lF_eul, INSERT_VALUES, user->lF_eul);
+	DMLocalToLocalEnd(fda, user->lF_eul, INSERT_VALUES, user->lF_eul);
+	DMLocalToGlobal(fda, user->lF_eul, INSERT_VALUES, user->F_eul);
 	//PetscReal ts, te;
-	//PetscGetTime(&ts);
-	//PetscGetTime(&te);
+	//PetscTime(&ts);
+	//PetscTime(&te);
 
 
 	
@@ -4237,8 +4237,8 @@ PetscErrorCode Calc_eulforces_ACL(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int
 
 
 
-  	DA              da = user->da, fda = user->fda;
-  	DALocalInfo     info;
+  	DM              da = user->da, fda = user->fda;
+  	DMDALocalInfo     info;
   	PetscInt        xs, xe, ys, ye, zs, ze; // Local grid information
   	PetscInt        mx, my, mz; // Dimensions in three directions
   	PetscInt        i, j, k, l, ibi;
@@ -4256,7 +4256,7 @@ PetscErrorCode Calc_eulforces_ACL(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int
 
   	double r1, r2, r3;
 
-  	DAGetLocalInfo(da, &info);
+  	DMDAGetLocalInfo(da, &info);
   	mx = info.mx; my = info.my; mz = info.mz;
   	xs = info.xs; xe = xs + info.xm;
   	ys = info.ys; ye = ys + info.ym;
@@ -4278,14 +4278,14 @@ PetscErrorCode Calc_eulforces_ACL(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int
 
 
 
-  	DAVecGetArray(fda, user->lF_eul, &lf_eul);
-  	DAVecGetArray(fda, user->lCsi,  &csi);
-  	DAVecGetArray(fda, user->lEta,  &eta);
-  	DAVecGetArray(fda, user->lZet,  &zet);
-  	DAVecGetArray(da,  user->lAj,  &aj);
+  	DMDAVecGetArray(fda, user->lF_eul, &lf_eul);
+  	DMDAVecGetArray(fda, user->lCsi,  &csi);
+  	DMDAVecGetArray(fda, user->lEta,  &eta);
+  	DMDAVecGetArray(fda, user->lZet,  &zet);
+  	DMDAVecGetArray(da,  user->lAj,  &aj);
 
-  	DAGetGhostedCoordinates(da, &Coor);
-  	DAVecGetArray(fda, Coor, &coor);
+  	DMGetCoordinatesLocal(da, &Coor);
+  	DMDAVecGetArray(fda, Coor, &coor);
 
 	A_Sum = 0.0; P_Sum = 0.0; U_Sum = 0.0; F_Sum=0.0; M_Sum=0.0; Fx_Sum=0.0; Fy_Sum=0.0; Fz_Sum=0.0;
 	for (k=lzs;k<lze;k++) 
@@ -4359,13 +4359,13 @@ PetscErrorCode Calc_eulforces_ACL(UserCtx *user, IBMNodes *ibm, FSInfo *fsi, int
 	}
 
 
-  	DAVecRestoreArray(fda, user->lF_eul, &lf_eul);
-  	DAVecRestoreArray(fda, user->lCsi,  &csi);
-  	DAVecRestoreArray(fda, user->lEta,  &eta);
-  	DAVecRestoreArray(fda, user->lZet,  &zet);
-  	DAVecRestoreArray(da,  user->lAj,  &aj);
+  	DMDAVecRestoreArray(fda, user->lF_eul, &lf_eul);
+  	DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  	DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  	DMDAVecRestoreArray(fda, user->lZet,  &zet);
+  	DMDAVecRestoreArray(da,  user->lAj,  &aj);
 
-  	DAVecRestoreArray(fda, Coor, &coor);
+  	DMDAVecRestoreArray(fda, Coor, &coor);
 
 	return(0);
 }
@@ -5501,7 +5501,7 @@ PetscErrorCode TurbineTorqueControl_Output(FSInfo *fsi, IBMNodes *ibm)
 {
 	int rank, i, ibi;
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	if (!rank) {
 		for (ibi=0; ibi<NumberOfTurbines; ibi++) {
 			FILE *f;

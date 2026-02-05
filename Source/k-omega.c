@@ -639,8 +639,8 @@ void Compute_dscalar_dxyz ( double csi0, double csi1, double csi2, double eta0, 
 
 void RHS_K_Omega(UserCtx *user, Vec KOmega_RHS)
 {
-	DA		da = user->da, fda = user->fda, fda2 = user->fda2;
-	DALocalInfo	info;
+	DM		da = user->da, fda = user->fda, fda2 = user->fda2;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -664,7 +664,7 @@ void RHS_K_Omega(UserCtx *user, Vec KOmega_RHS)
 	Cmpnts	***kcsi, ***keta, ***kzet;
 	PetscReal	***iaj, ***jaj, ***kaj, ***rho, ***mu;
 
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -698,49 +698,49 @@ void RHS_K_Omega(UserCtx *user, Vec KOmega_RHS)
 	
 	
 	if(levelset) {
-		DAVecGetArray(da, user->lDensity, &rho);
-		DAVecGetArray(da, user->lMu, &mu);
+		DMDAVecGetArray(da, user->lDensity, &rho);
+		DMDAVecGetArray(da, user->lMu, &mu);
 	}
 	
-	//DAVecGetArray(da, user->lSrans, &lS);
-	if(rans==3) DAVecGetArray(da, user->lF1, &lf1);
-	DAVecGetArray(da, user->lNu_t, &lnu_t);
+	//DMDAVecGetArray(da, user->lSrans, &lS);
+	if(rans==3) DMDAVecGetArray(da, user->lF1, &lf1);
+	DMDAVecGetArray(da, user->lNu_t, &lnu_t);
 	
-	DAVecGetArray(fda, user->lUcont, &ucont);
-	DAVecGetArray(fda, user->lUcat,  &ucat);
+	DMDAVecGetArray(fda, user->lUcont, &ucont);
+	DMDAVecGetArray(fda, user->lUcat,  &ucat);
 	
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
 	
-	DAVecGetArray(fda, user->lICsi, &icsi);
-	DAVecGetArray(fda, user->lIEta, &ieta);
-	DAVecGetArray(fda, user->lIZet, &izet);
-	DAVecGetArray(fda, user->lJCsi, &jcsi);
-	DAVecGetArray(fda, user->lJEta, &jeta);
-	DAVecGetArray(fda, user->lJZet, &jzet);
-	DAVecGetArray(fda, user->lKCsi, &kcsi);
-	DAVecGetArray(fda, user->lKEta, &keta);
-	DAVecGetArray(fda, user->lKZet, &kzet);
+	DMDAVecGetArray(fda, user->lICsi, &icsi);
+	DMDAVecGetArray(fda, user->lIEta, &ieta);
+	DMDAVecGetArray(fda, user->lIZet, &izet);
+	DMDAVecGetArray(fda, user->lJCsi, &jcsi);
+	DMDAVecGetArray(fda, user->lJEta, &jeta);
+	DMDAVecGetArray(fda, user->lJZet, &jzet);
+	DMDAVecGetArray(fda, user->lKCsi, &kcsi);
+	DMDAVecGetArray(fda, user->lKEta, &keta);
+	DMDAVecGetArray(fda, user->lKZet, &kzet);
 	
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(da, user->Distance, &distance);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->Distance, &distance);
 	
-	DAVecGetArray(da, user->lAj, &aj);
-	DAVecGetArray(da, user->lIAj, &iaj);
-	DAVecGetArray(da, user->lJAj, &jaj);
-	DAVecGetArray(da, user->lKAj, &kaj);
+	DMDAVecGetArray(da, user->lAj, &aj);
+	DMDAVecGetArray(da, user->lIAj, &iaj);
+	DMDAVecGetArray(da, user->lJAj, &jaj);
+	DMDAVecGetArray(da, user->lKAj, &kaj);
 	
-	DAVecGetArray(fda2, user->lK_Omega, &K_Omega);
-	DAVecGetArray(fda2, user->lK_Omega_o, &K_Omega_o);
-	DAVecGetArray(fda2, KOmega_RHS, &komega_rhs);
+	DMDAVecGetArray(fda2, user->lK_Omega, &K_Omega);
+	DMDAVecGetArray(fda2, user->lK_Omega_o, &K_Omega_o);
+	DMDAVecGetArray(fda2, KOmega_RHS, &komega_rhs);
 		
-	DAVecGetArray(fda2, Fp1, &fp1);
-	DAVecGetArray(fda2, Fp2, &fp2);
-	DAVecGetArray(fda2, Fp3, &fp3);
-	DAVecGetArray(fda2, Visc1, &visc1);
-	DAVecGetArray(fda2, Visc2, &visc2);
-	DAVecGetArray(fda2, Visc3, &visc3);		
+	DMDAVecGetArray(fda2, Fp1, &fp1);
+	DMDAVecGetArray(fda2, Fp2, &fp2);
+	DMDAVecGetArray(fda2, Fp3, &fp3);
+	DMDAVecGetArray(fda2, Visc1, &visc1);
+	DMDAVecGetArray(fda2, Visc2, &visc2);
+	DMDAVecGetArray(fda2, Visc3, &visc3);		
 	
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
@@ -1004,37 +1004,37 @@ void RHS_K_Omega(UserCtx *user, Vec KOmega_RHS)
 		}
 	}
 	
-	DAVecRestoreArray(fda2, Fp1, &fp1);
-	DAVecRestoreArray(fda2, Fp2, &fp2);
-	DAVecRestoreArray(fda2, Fp3, &fp3);
-	DAVecRestoreArray(fda2, Visc1, &visc1);
-	DAVecRestoreArray(fda2, Visc2, &visc2);
-	DAVecRestoreArray(fda2, Visc3, &visc3);
+	DMDAVecRestoreArray(fda2, Fp1, &fp1);
+	DMDAVecRestoreArray(fda2, Fp2, &fp2);
+	DMDAVecRestoreArray(fda2, Fp3, &fp3);
+	DMDAVecRestoreArray(fda2, Visc1, &visc1);
+	DMDAVecRestoreArray(fda2, Visc2, &visc2);
+	DMDAVecRestoreArray(fda2, Visc3, &visc3);
 
-	DALocalToLocalBegin(fda2, Fp1, INSERT_VALUES, Fp1);
-	DALocalToLocalEnd(fda2, Fp1, INSERT_VALUES, Fp1);
+	DMLocalToLocalBegin(fda2, Fp1, INSERT_VALUES, Fp1);
+	DMLocalToLocalEnd(fda2, Fp1, INSERT_VALUES, Fp1);
 	
-	DALocalToLocalBegin(fda2, Fp2, INSERT_VALUES, Fp2);
-	DALocalToLocalEnd(fda2, Fp2, INSERT_VALUES, Fp2);
+	DMLocalToLocalBegin(fda2, Fp2, INSERT_VALUES, Fp2);
+	DMLocalToLocalEnd(fda2, Fp2, INSERT_VALUES, Fp2);
 	
-	DALocalToLocalBegin(fda2, Fp3, INSERT_VALUES, Fp3);
-	DALocalToLocalEnd(fda2, Fp3, INSERT_VALUES, Fp3);
+	DMLocalToLocalBegin(fda2, Fp3, INSERT_VALUES, Fp3);
+	DMLocalToLocalEnd(fda2, Fp3, INSERT_VALUES, Fp3);
 	
-	DALocalToLocalBegin(fda2, Visc1, INSERT_VALUES, Visc1);
-	DALocalToLocalEnd(fda2, Visc1, INSERT_VALUES, Visc1);
+	DMLocalToLocalBegin(fda2, Visc1, INSERT_VALUES, Visc1);
+	DMLocalToLocalEnd(fda2, Visc1, INSERT_VALUES, Visc1);
 	
-	DALocalToLocalBegin(fda2, Visc2, INSERT_VALUES, Visc2);
-	DALocalToLocalEnd(fda2, Visc2, INSERT_VALUES, Visc2);
+	DMLocalToLocalBegin(fda2, Visc2, INSERT_VALUES, Visc2);
+	DMLocalToLocalEnd(fda2, Visc2, INSERT_VALUES, Visc2);
 	
-	DALocalToLocalBegin(fda2, Visc3, INSERT_VALUES, Visc3);
-	DALocalToLocalEnd(fda2, Visc3, INSERT_VALUES, Visc3);
+	DMLocalToLocalBegin(fda2, Visc3, INSERT_VALUES, Visc3);
+	DMLocalToLocalEnd(fda2, Visc3, INSERT_VALUES, Visc3);
 	
-	DAVecGetArray(fda2, Fp1, &fp1);
-	DAVecGetArray(fda2, Fp2, &fp2);
-	DAVecGetArray(fda2, Fp3, &fp3);
-	DAVecGetArray(fda2, Visc1, &visc1);
-	DAVecGetArray(fda2, Visc2, &visc2);
-	DAVecGetArray(fda2, Visc3, &visc3);
+	DMDAVecGetArray(fda2, Fp1, &fp1);
+	DMDAVecGetArray(fda2, Fp2, &fp2);
+	DMDAVecGetArray(fda2, Fp3, &fp3);
+	DMDAVecGetArray(fda2, Visc1, &visc1);
+	DMDAVecGetArray(fda2, Visc2, &visc2);
+	DMDAVecGetArray(fda2, Visc3, &visc3);
 	
 	if(periodic)
 	for (k=zs; k<ze; k++)
@@ -1198,63 +1198,63 @@ void RHS_K_Omega(UserCtx *user, Vec KOmega_RHS)
 		}
 	}
 	
-	if(rans==3) DAVecRestoreArray(da, user->lF1, &lf1);
-	DAVecRestoreArray(da, user->lNu_t, &lnu_t);
+	if(rans==3) DMDAVecRestoreArray(da, user->lF1, &lf1);
+	DMDAVecRestoreArray(da, user->lNu_t, &lnu_t);
 	
-	DAVecRestoreArray(fda2, Fp1, &fp1);
-	DAVecRestoreArray(fda2, Fp2, &fp2);
-	DAVecRestoreArray(fda2, Fp3, &fp3);
-	DAVecRestoreArray(fda2, Visc1, &visc1);
-	DAVecRestoreArray(fda2, Visc2, &visc2);
-	DAVecRestoreArray(fda2, Visc3, &visc3);
+	DMDAVecRestoreArray(fda2, Fp1, &fp1);
+	DMDAVecRestoreArray(fda2, Fp2, &fp2);
+	DMDAVecRestoreArray(fda2, Fp3, &fp3);
+	DMDAVecRestoreArray(fda2, Visc1, &visc1);
+	DMDAVecRestoreArray(fda2, Visc2, &visc2);
+	DMDAVecRestoreArray(fda2, Visc3, &visc3);
 	
-	DAVecRestoreArray(fda, user->lUcont, &ucont);
-	DAVecRestoreArray(fda, user->lUcat,  &ucat);
+	DMDAVecRestoreArray(fda, user->lUcont, &ucont);
+	DMDAVecRestoreArray(fda, user->lUcat,  &ucat);
 	
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);
 	
-	DAVecRestoreArray(fda, user->lICsi, &icsi);
-	DAVecRestoreArray(fda, user->lIEta, &ieta);
-	DAVecRestoreArray(fda, user->lIZet, &izet);
-	DAVecRestoreArray(fda, user->lJCsi, &jcsi);
-	DAVecRestoreArray(fda, user->lJEta, &jeta);
-	DAVecRestoreArray(fda, user->lJZet, &jzet);
-	DAVecRestoreArray(fda, user->lKCsi, &kcsi);
-	DAVecRestoreArray(fda, user->lKEta, &keta);
-	DAVecRestoreArray(fda, user->lKZet, &kzet);
+	DMDAVecRestoreArray(fda, user->lICsi, &icsi);
+	DMDAVecRestoreArray(fda, user->lIEta, &ieta);
+	DMDAVecRestoreArray(fda, user->lIZet, &izet);
+	DMDAVecRestoreArray(fda, user->lJCsi, &jcsi);
+	DMDAVecRestoreArray(fda, user->lJEta, &jeta);
+	DMDAVecRestoreArray(fda, user->lJZet, &jzet);
+	DMDAVecRestoreArray(fda, user->lKCsi, &kcsi);
+	DMDAVecRestoreArray(fda, user->lKEta, &keta);
+	DMDAVecRestoreArray(fda, user->lKZet, &kzet);
 	
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(da, user->Distance, &distance);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->Distance, &distance);
 	
-	DAVecRestoreArray(da, user->lAj, &aj);
-	DAVecRestoreArray(da, user->lIAj, &iaj);
-	DAVecRestoreArray(da, user->lJAj, &jaj);
-	DAVecRestoreArray(da, user->lKAj, &kaj);
+	DMDAVecRestoreArray(da, user->lAj, &aj);
+	DMDAVecRestoreArray(da, user->lIAj, &iaj);
+	DMDAVecRestoreArray(da, user->lJAj, &jaj);
+	DMDAVecRestoreArray(da, user->lKAj, &kaj);
 	
-	DAVecRestoreArray(fda2, user->lK_Omega, &K_Omega);
-	DAVecRestoreArray(fda2, user->lK_Omega_o, &K_Omega_o);
-	DAVecRestoreArray(fda2, KOmega_RHS, &komega_rhs);
+	DMDAVecRestoreArray(fda2, user->lK_Omega, &K_Omega);
+	DMDAVecRestoreArray(fda2, user->lK_Omega_o, &K_Omega_o);
+	DMDAVecRestoreArray(fda2, KOmega_RHS, &komega_rhs);
 	
 	if(levelset) {
-		DAVecRestoreArray(da, user->lDensity, &rho);
-		DAVecRestoreArray(da, user->lMu, &mu);
+		DMDAVecRestoreArray(da, user->lDensity, &rho);
+		DMDAVecRestoreArray(da, user->lMu, &mu);
 	}
 	
-	VecDestroy(Fp1);
-	VecDestroy(Fp2);
-	VecDestroy(Fp3);
-	VecDestroy(Visc1);
-	VecDestroy(Visc2);
-	VecDestroy(Visc3);
+	VecDestroy(&Fp1);
+	VecDestroy(&Fp2);
+	VecDestroy(&Fp3);
+	VecDestroy(&Visc1);
+	VecDestroy(&Visc2);
+	VecDestroy(&Visc3);
 };
 
 
 void K_Omega_IC(UserCtx *user)
 {
-	DA		da = user->da;
-	DALocalInfo	info;
+	DM		da = user->da;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -1266,7 +1266,7 @@ void K_Omega_IC(UserCtx *user)
 	Cmpnts2 ***K_Omega;
 	PetscReal	***nvert;
 
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1284,8 +1284,8 @@ void K_Omega_IC(UserCtx *user)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
 
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
 	
 	// BC for K, Omega
 	for (k=lzs; k<lze; k++)
@@ -1304,10 +1304,10 @@ void K_Omega_IC(UserCtx *user)
 		}
 	}
 	
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
 	
-	DALocalToGlobal(user->fda2, user->lK_Omega, INSERT_VALUES, user->K_Omega);
+	DMLocalToGlobal(user->fda2, user->lK_Omega, INSERT_VALUES, user->K_Omega);
 	VecCopy(user->K_Omega, user->K_Omega_o);
 	
 };
@@ -1315,8 +1315,8 @@ void K_Omega_IC(UserCtx *user)
 
 void K_Omega_BC(UserCtx *user)
 {
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k, ibi;
@@ -1330,7 +1330,7 @@ void K_Omega_BC(UserCtx *user)
 	Cmpnts	***csi, ***eta, ***zet, ***ucat;
 	PetscReal	***nvert, ***ustar;
 
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1348,21 +1348,21 @@ void K_Omega_BC(UserCtx *user)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
 
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
-	DAVecGetArray(fda, user->lUcat, &ucat);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(fda, user->lUcat, &ucat);
 	
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(da, user->lAj, &aj);
-	DAVecGetArray(da, user->lUstar, &ustar);
-	DAVecGetArray(da, user->Distance, &distance);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lAj, &aj);
+	DMDAVecGetArray(da, user->lUstar, &ustar);
+	DMDAVecGetArray(da, user->Distance, &distance);
 	
-	DAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
+	DMDAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
 	
 	if(levelset) {
-		DAVecGetArray(da, user->lDensity, &rho);
-		DAVecGetArray(da, user->lMu, &mu);
+		DMDAVecGetArray(da, user->lDensity, &rho);
+		DMDAVecGetArray(da, user->lMu, &mu);
 	}
 	
 	// BC for K, Omega
@@ -1517,12 +1517,12 @@ void K_Omega_BC(UserCtx *user)
 		
 		if ( nvert[k][j][i] > 1.1 ) K_Omega[k][j][i].x = K_Omega[k][j][i].y = 0.;
 	}
-	DAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
+	DMDAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
 
-        DALocalToLocalBegin(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
-        DALocalToLocalEnd(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
+        DMLocalToLocalBegin(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
+        DMLocalToLocalEnd(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
 
-        DAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
+        DMDAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
 	
 	for (k=zs; k<ze; k++)
 	for (j=ys; j<ye; j++)
@@ -1602,32 +1602,32 @@ void K_Omega_BC(UserCtx *user)
 		};
 	}
 	
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);
-	DAVecRestoreArray(fda, user->lUcat, &ucat);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);
+	DMDAVecRestoreArray(fda, user->lUcat, &ucat);
 	
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(da, user->lAj, &aj);
-	DAVecRestoreArray(da, user->lUstar, &ustar);
-	DAVecRestoreArray(da, user->Distance, &distance);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lAj, &aj);
+	DMDAVecRestoreArray(da, user->lUstar, &ustar);
+	DMDAVecRestoreArray(da, user->Distance, &distance);
 	
-	DAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
+	DMDAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
 	
 	if(levelset) {
-		DAVecRestoreArray(da, user->lDensity, &rho);
-		DAVecRestoreArray(da, user->lMu, &mu);
+		DMDAVecRestoreArray(da, user->lDensity, &rho);
+		DMDAVecRestoreArray(da, user->lMu, &mu);
 	}
 	
-	DALocalToLocalBegin(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
-	DALocalToLocalEnd(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
+	DMLocalToLocalBegin(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
+	DMLocalToLocalEnd(user->fda2, user->lK_Omega, INSERT_VALUES, user->lK_Omega);
 };
 
 PetscErrorCode FormFunction_K_omega(SNES snes, Vec K_Omega, Vec Rhs, void *ptr)
 {
 	UserCtx *user = (UserCtx*)ptr;
 
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -1636,7 +1636,7 @@ PetscErrorCode FormFunction_K_omega(SNES snes, Vec K_Omega, Vec Rhs, void *ptr)
 	PetscReal	***nvert;
 	Cmpnts2 ***rhs;
 
-	DAGetLocalInfo(user->da, &info);
+	DMDAGetLocalInfo(user->da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1655,8 +1655,8 @@ PetscErrorCode FormFunction_K_omega(SNES snes, Vec K_Omega, Vec Rhs, void *ptr)
 	if (ze==mz) lze = ze-1;
 	
 
-	DAGlobalToLocalBegin(user->fda2, K_Omega, INSERT_VALUES, user->lK_Omega);
-	DAGlobalToLocalEnd(user->fda2, K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalBegin(user->fda2, K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalEnd(user->fda2, K_Omega, INSERT_VALUES, user->lK_Omega);
 	
 	K_Omega_BC(user);
 	RHS_K_Omega(user, Rhs);
@@ -1665,8 +1665,8 @@ PetscErrorCode FormFunction_K_omega(SNES snes, Vec K_Omega, Vec Rhs, void *ptr)
 	VecAXPY(Rhs, -1/user->dt, K_Omega);
 	VecAXPY(Rhs, 1/user->dt, user->K_Omega_o);
 	
-	DAVecGetArray(user->da, user->lNvert, &nvert);
-	DAVecGetArray(user->fda2, Rhs, &rhs);
+	DMDAVecGetArray(user->da, user->lNvert, &nvert);
+	DMDAVecGetArray(user->fda2, Rhs, &rhs);
 	
 	for (k=zs; k<ze; k++)
 	for (j=ys; j<ye; j++)
@@ -1701,8 +1701,8 @@ PetscErrorCode FormFunction_K_omega(SNES snes, Vec K_Omega, Vec Rhs, void *ptr)
 		}
 
 	}
-	DAVecRestoreArray(user->da, user->lNvert, &nvert);
-	DAVecRestoreArray(user->fda2, Rhs, &rhs);
+	DMDAVecRestoreArray(user->da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(user->fda2, Rhs, &rhs);
 	
 	return(0);
 }
@@ -1732,7 +1732,7 @@ void Solve_K_Omega(UserCtx *user)
 		SNESSetFunction(snes_two_eq,r_ko,FormFunction_K_omega,(void *)&user[bi]);
 		MatCreateSNESMF(snes_two_eq, &J_ko);
 		SNESSetJacobian(snes_two_eq,J_ko,J_ko,MatMFFDComputeJacobian,(void *)&user[bi]);
-		SNESSetType(snes_two_eq, SNESTR);			//SNESTR,SNESLS	
+		SNESSetType(snes_two_eq, SNESNEWTONLS);			//SNESNEWTONLS,SNESLS	
 		SNESSetMaxLinearSolveFailures(snes_two_eq,10000);
 		SNESSetMaxNonlinearStepFailures(snes_two_eq,10000);		
 		SNESKSPSetUseEW(snes_two_eq, PETSC_TRUE);
@@ -1751,22 +1751,22 @@ void Solve_K_Omega(UserCtx *user)
 	}
 	
 	extern PetscErrorCode MySNESMonitor(SNES snes,PetscInt n,PetscReal rnorm,void *dummy);
-	SNESMonitorSet(snes_two_eq,MySNESMonitor,PETSC_NULL,PETSC_NULL);
+	SNESMonitorSet(snes_two_eq,MySNESMonitor,NULL,NULL);
 	
 	PetscPrintf(PETSC_COMM_WORLD, "\nSolving K-Omega 0...\n");
 	
-	SNESSolve(snes_two_eq, PETSC_NULL, user[bi].K_Omega);
+	SNESSolve(snes_two_eq, NULL, user[bi].K_Omega);
 	
 	SNESGetFunctionNorm(snes_two_eq, &norm);
 	PetscPrintf(PETSC_COMM_WORLD, "\nK_Omega SNES residual norm=%.5e\n\n", norm);
 
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
 	PetscInt	lxs, lxe, lys, lye, lzs, lze;
 
-	DAGetLocalInfo(user->da, &info);
+	DMDAGetLocalInfo(user->da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1784,13 +1784,13 @@ void Solve_K_Omega(UserCtx *user)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
 	
-	DAGlobalToLocalBegin(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
-	DAGlobalToLocalEnd(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalBegin(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalEnd(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
 
 	Cmpnts2 ***k_omega, ***lk_omega;
 	
-	DAVecGetArray(user->fda2, user->K_Omega, &k_omega);
-	DAVecGetArray(user->fda2, user->lK_Omega, &lk_omega);
+	DMDAVecGetArray(user->fda2, user->K_Omega, &k_omega);
+	DMDAVecGetArray(user->fda2, user->lK_Omega, &lk_omega);
 
 	if(periodic)
 	for (k=zs; k<ze; k++)
@@ -1830,21 +1830,21 @@ void Solve_K_Omega(UserCtx *user)
 		*/
 		if(flag) k_omega[k][j][i] = lk_omega[c][b][a];
 	}
-	DAVecRestoreArray(user->fda2, user->K_Omega, &k_omega);
-	DAVecRestoreArray(user->fda2, user->lK_Omega, &lk_omega);
+	DMDAVecRestoreArray(user->fda2, user->K_Omega, &k_omega);
+	DMDAVecRestoreArray(user->fda2, user->lK_Omega, &lk_omega);
 
-	DAGlobalToLocalBegin(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
-	DAGlobalToLocalEnd(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalBegin(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalEnd(user->fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
 	K_Omega_BC(user);
-	DALocalToGlobal(user->fda2, user->lK_Omega, INSERT_VALUES, user->K_Omega);
+	DMLocalToGlobal(user->fda2, user->lK_Omega, INSERT_VALUES, user->K_Omega);
 };
 
 void K_Omega_Set_Constant(UserCtx *user)
 {
-	DA		da = user->da;
-	DA		fda = user->fda;
-	DA		fda2 = user->fda2;
-	DALocalInfo	info;
+	DM		da = user->da;
+	DM		fda = user->fda;
+	DM		fda2 = user->fda2;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -1854,7 +1854,7 @@ void K_Omega_Set_Constant(UserCtx *user)
 	Cmpnts ***ucat, ***csi, ***eta, ***zet;
 	PetscReal	***nvert, ***nu_t, ***f1, ***aj, ***distance, ***rho, ***mu;
 
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1872,26 +1872,26 @@ void K_Omega_Set_Constant(UserCtx *user)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
 	
-	DAGlobalToLocalBegin(fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
-	DAGlobalToLocalEnd(fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalBegin(fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
+	DMGlobalToLocalEnd(fda2, user->K_Omega, INSERT_VALUES, user->lK_Omega);
 	
-	DAGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
-	DAGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
 
 	if(levelset) {
-		DAVecGetArray(da, user->lDensity, &rho);
-		DAVecGetArray(da, user->lMu, &mu);
+		DMDAVecGetArray(da, user->lDensity, &rho);
+		DMDAVecGetArray(da, user->lMu, &mu);
 	}
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
-	DAVecGetArray(da, user->lAj, &aj);
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(da, user->lNu_t, &nu_t);
-	if(rans==3) DAVecGetArray(da, user->lF1, &f1);
-	DAVecGetArray(da, user->Distance, &distance);
-	DAVecGetArray(fda2, user->lK_Omega, &K_Omega);
-	DAVecGetArray(fda, user->lUcat, &ucat);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(da, user->lAj, &aj);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lNu_t, &nu_t);
+	if(rans==3) DMDAVecGetArray(da, user->lF1, &f1);
+	DMDAVecGetArray(da, user->Distance, &distance);
+	DMDAVecGetArray(fda2, user->lK_Omega, &K_Omega);
+	DMDAVecGetArray(fda, user->lUcat, &ucat);
 	
 	// BC for K, Omega
 	for (k=zs; k<ze; k++)
@@ -1991,25 +1991,25 @@ void K_Omega_Set_Constant(UserCtx *user)
 	}
 	
 	if(levelset) {
-		DAVecRestoreArray(da, user->lDensity, &rho);
-		DAVecRestoreArray(da, user->lMu, &mu);
+		DMDAVecRestoreArray(da, user->lDensity, &rho);
+		DMDAVecRestoreArray(da, user->lMu, &mu);
 	}
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);
-	DAVecRestoreArray(da, user->lAj, &aj);
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(da, user->lNu_t, &nu_t);
-	if(rans==3) DAVecRestoreArray(da, user->lF1, &f1);
-	DAVecRestoreArray(da, user->Distance, &distance);
-	DAVecRestoreArray(fda2, user->lK_Omega, &K_Omega);
-	DAVecRestoreArray(fda, user->lUcat, &ucat);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);
+	DMDAVecRestoreArray(da, user->lAj, &aj);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lNu_t, &nu_t);
+	if(rans==3) DMDAVecRestoreArray(da, user->lF1, &f1);
+	DMDAVecRestoreArray(da, user->Distance, &distance);
+	DMDAVecRestoreArray(fda2, user->lK_Omega, &K_Omega);
+	DMDAVecRestoreArray(fda, user->lUcat, &ucat);
 
-	DALocalToLocalBegin(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
-	DALocalToLocalEnd(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
+	DMLocalToLocalBegin(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
+	DMLocalToLocalEnd(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
 	if(rans==3)  {
-		DALocalToLocalBegin(da, user->lF1, INSERT_VALUES, user->lF1);
-		DALocalToLocalEnd(da, user->lF1, INSERT_VALUES, user->lF1);
+		DMLocalToLocalBegin(da, user->lF1, INSERT_VALUES, user->lF1);
+		DMLocalToLocalEnd(da, user->lF1, INSERT_VALUES, user->lF1);
 	}
 };
 

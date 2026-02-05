@@ -15,8 +15,8 @@ PetscErrorCode FormFunctionSNES(SNES snes, Vec X, Vec Rhs, void *ctx)
 
   Cmpnts ***rhs;
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -47,23 +47,23 @@ PetscErrorCode FormFunctionSNES(SNES snes, Vec X, Vec Rhs, void *ctx)
 
   VecDuplicate(Rhs, &dUcont);
   
-  DAVecGetArray(user->fda, Rhs, &rhs);
+  DMDAVecGetArray(user->fda, Rhs, &rhs);
 
   Vec lUcont;
-  DAGetLocalVector(user->fda, &lUcont);  
+  DMGetLocalVector(user->fda, &lUcont);  
 
 
-  DAGlobalToLocalBegin(user->fda, X, INSERT_VALUES, lUcont);
-  DAGlobalToLocalEnd(user->fda, X, INSERT_VALUES, lUcont);
+  DMGlobalToLocalBegin(user->fda, X, INSERT_VALUES, lUcont);
+  DMGlobalToLocalEnd(user->fda, X, INSERT_VALUES, lUcont);
 
-  PetscBarrier(PETSC_NULL);
+  PetscBarrier(NULL);
   Contra2Cart(user);
 
 /*   OutflowVelocity(user, X); */
 
-/*   DAGlobalToLocalBegin(user->fda, X, INSERT_VALUES, lUcont); */
+/*   DMGlobalToLocalBegin(user->fda, X, INSERT_VALUES, lUcont); */
 
-/*   DAGlobalToLocalEnd(user->fda, X, INSERT_VALUES, lUcont); */
+/*   DMGlobalToLocalEnd(user->fda, X, INSERT_VALUES, lUcont); */
   GhostNodeVelocity(user);
 
   Vec Conv, Visc, Rc, Rct;
@@ -77,13 +77,13 @@ PetscErrorCode FormFunctionSNES(SNES snes, Vec X, Vec Rhs, void *ctx)
 
   VecWAXPY(Rc, -1., Conv, Visc);
 
-  VecDestroy(Conv);
-  VecDestroy(Visc);
+  VecDestroy(&Conv);
+  VecDestroy(&Visc);
 
   Cmpnts ***rc, ***rct;
-  DAVecGetArray(user->fda, Rc, &rc);
+  DMDAVecGetArray(user->fda, Rc, &rc);
 
-  DAVecGetArray(user->fda, Rct, &rct);
+  DMDAVecGetArray(user->fda, Rct, &rct);
   
   lxs = xs; lxe = xe;
   lys = ys; lye = ye;
@@ -98,11 +98,11 @@ PetscErrorCode FormFunctionSNES(SNES snes, Vec X, Vec Rhs, void *ctx)
   if (ze==mz) lze = ze-1;
   
 
-  DAVecGetArray(fda, Csi, &csi);
-  DAVecGetArray(fda, Eta, &eta);
-  DAVecGetArray(fda, Zet, &zet);
+  DMDAVecGetArray(fda, Csi, &csi);
+  DMDAVecGetArray(fda, Eta, &eta);
+  DMDAVecGetArray(fda, Zet, &zet);
 
-  DAVecGetArray(da, user->lAj, &aj);
+  DMDAVecGetArray(da, user->lAj, &aj);
 
   /* Calculate the contravariant rhs from the cartesian rhs */
   for (k=lzs; k<lze; k++) {
@@ -125,37 +125,37 @@ PetscErrorCode FormFunctionSNES(SNES snes, Vec X, Vec Rhs, void *ctx)
     }
   }
 
-  DAVecRestoreArray(da, user->lAj, &aj);
-  DAVecRestoreArray(fda, Rct, &rct);
-  DAVecRestoreArray(fda, Rc, &rc);
+  DMDAVecRestoreArray(da, user->lAj, &aj);
+  DMDAVecRestoreArray(fda, Rct, &rct);
+  DMDAVecRestoreArray(fda, Rc, &rc);
 
-  VecDestroy(Rc);
+  VecDestroy(&Rc);
 
-  DALocalToLocalBegin(fda, Rct, INSERT_VALUES, Rct);
-  DALocalToLocalEnd(fda, Rct, INSERT_VALUES, Rct);
+  DMLocalToLocalBegin(fda, Rct, INSERT_VALUES, Rct);
+  DMLocalToLocalEnd(fda, Rct, INSERT_VALUES, Rct);
 
-  DAVecGetArray(fda, Rct, &rct);
+  DMDAVecGetArray(fda, Rct, &rct);
 
-  DAVecGetArray(da, user->lNvert, &nvert);
-  DAVecGetArray(da, user->lNvert_o, &nvert_o);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(da, user->lNvert_o, &nvert_o);
 
-  DAVecGetArray(fda, ICsi, &icsi);
-  DAVecGetArray(fda, IEta, &ieta);
-  DAVecGetArray(fda, IZet, &izet);
+  DMDAVecGetArray(fda, ICsi, &icsi);
+  DMDAVecGetArray(fda, IEta, &ieta);
+  DMDAVecGetArray(fda, IZet, &izet);
            
-  DAVecGetArray(fda, JCsi, &jcsi);
-  DAVecGetArray(fda, JEta, &jeta);
-  DAVecGetArray(fda, JZet, &jzet);
+  DMDAVecGetArray(fda, JCsi, &jcsi);
+  DMDAVecGetArray(fda, JEta, &jeta);
+  DMDAVecGetArray(fda, JZet, &jzet);
            
-  DAVecGetArray(fda, KCsi, &kcsi);
-  DAVecGetArray(fda, KEta, &keta);
-  DAVecGetArray(fda, KZet, &kzet);
+  DMDAVecGetArray(fda, KCsi, &kcsi);
+  DMDAVecGetArray(fda, KEta, &keta);
+  DMDAVecGetArray(fda, KZet, &kzet);
 
-  DAVecGetArray(da, IAj, &iaj);
-  DAVecGetArray(da, JAj, &jaj);
-  DAVecGetArray(da, KAj, &kaj);
+  DMDAVecGetArray(da, IAj, &iaj);
+  DMDAVecGetArray(da, JAj, &jaj);
+  DMDAVecGetArray(da, KAj, &kaj);
 
-  DAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(da, user->lP, &p);
   for (k=lzs; k<lze; k++) {
     for (j=lys; j<lye; j++) {
       for (i=lxs; i<lxe; i++) {
@@ -601,39 +601,39 @@ PetscErrorCode FormFunctionSNES(SNES snes, Vec X, Vec Rhs, void *ctx)
     }
   }
 
-  DAVecRestoreArray(fda, Csi, &csi);
-  DAVecRestoreArray(fda, Eta, &eta);
-  DAVecRestoreArray(fda, Zet, &zet);
+  DMDAVecRestoreArray(fda, Csi, &csi);
+  DMDAVecRestoreArray(fda, Eta, &eta);
+  DMDAVecRestoreArray(fda, Zet, &zet);
 
-  DAVecRestoreArray(fda, ICsi, &icsi);
-  DAVecRestoreArray(fda, IEta, &ieta);
-  DAVecRestoreArray(fda, IZet, &izet);
+  DMDAVecRestoreArray(fda, ICsi, &icsi);
+  DMDAVecRestoreArray(fda, IEta, &ieta);
+  DMDAVecRestoreArray(fda, IZet, &izet);
            
-  DAVecRestoreArray(fda, JCsi, &jcsi);
-  DAVecRestoreArray(fda, JEta, &jeta);
-  DAVecRestoreArray(fda, JZet, &jzet);
+  DMDAVecRestoreArray(fda, JCsi, &jcsi);
+  DMDAVecRestoreArray(fda, JEta, &jeta);
+  DMDAVecRestoreArray(fda, JZet, &jzet);
            
-  DAVecRestoreArray(fda, KCsi, &kcsi);
-  DAVecRestoreArray(fda, KEta, &keta);
-  DAVecRestoreArray(fda, KZet, &kzet);
+  DMDAVecRestoreArray(fda, KCsi, &kcsi);
+  DMDAVecRestoreArray(fda, KEta, &keta);
+  DMDAVecRestoreArray(fda, KZet, &kzet);
 
-  DAVecRestoreArray(fda, Rct, &rct);
-  DAVecRestoreArray(fda, Rhs, &rhs);
+  DMDAVecRestoreArray(fda, Rct, &rct);
+  DMDAVecRestoreArray(fda, Rhs, &rhs);
 
-  DAVecRestoreArray(da, IAj, &iaj);
-  DAVecRestoreArray(da, JAj, &jaj);
-  DAVecRestoreArray(da, KAj, &kaj);
+  DMDAVecRestoreArray(da, IAj, &iaj);
+  DMDAVecRestoreArray(da, JAj, &jaj);
+  DMDAVecRestoreArray(da, KAj, &kaj);
 
-  DAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(da, user->lP, &p);
 
-  DAVecRestoreArray(da, user->lNvert, &nvert);
-  DAVecRestoreArray(da, user->lNvert_o, &nvert_o);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(da, user->lNvert_o, &nvert_o);
 
   VecWAXPY(dUcont, -1., X, user->Ucont_o);
   
   VecAXPY(Rhs, 1./user->dt, dUcont);
 
-/*   DAVecGetArray(fda, Rhs, &rhs); */
+/*   DMDAVecGetArray(fda, Rhs, &rhs); */
 /*   if (ze == mz) { */
 /*     for (j=ys; j<ye; j++) { */
 /*       for (i=xs; i<xe; i++) { */
@@ -646,10 +646,10 @@ PetscErrorCode FormFunctionSNES(SNES snes, Vec X, Vec Rhs, void *ctx)
 /*       } */
 /*     } */
 /*   } */
-/*   DAVecRestoreArray(fda, Rhs, &rhs); */
-  VecDestroy(dUcont);
-  VecDestroy(Rct);
-  DARestoreLocalVector(fda, &lUcont);
+/*   DMDAVecRestoreArray(fda, Rhs, &rhs); */
+  VecDestroy(&dUcont);
+  VecDestroy(&Rct);
+  DMRestoreLocalVector(fda, &lUcont);
   return 0;
 }
 
@@ -678,9 +678,9 @@ PetscErrorCode Prediction(UserCtx *user)
 
   PetscInt snesit;
   for (snesit=0; snesit < 1; snesit++) {
-    SNESSolve(snes, PETSC_NULL, user->Ucont);
-    DAGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
-    DAGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+    SNESSolve(snes, NULL, user->Ucont);
+    DMGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+    DMGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
     Contra2Cart(user);
     OutflowVelocity(user, user->Ucont);
     GhostNodeVelocity(user);
@@ -690,13 +690,13 @@ PetscErrorCode Prediction(UserCtx *user)
   SNESGetIterationNumber(snes, &itn);
   PetscPrintf(PETSC_COMM_WORLD, "Iteration Number %i\n", itn);
 
-  VecDestroy(user->Ucont_o);
-  VecDestroy(user->Rhs);
+  VecDestroy(&user->Ucont_o);
+  VecDestroy(&user->Rhs);
   //  OutflowVelocity(user);
 
 
-  DAGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
-  DAGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+  DMGlobalToLocalBegin(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
+  DMGlobalToLocalEnd(user->fda, user->Ucont, INSERT_VALUES, user->lUcont);
 
   InflowFlux(user);
   PetscPrintf(PETSC_COMM_WORLD, "Inflow Flux %e\n", user->FluxInSum);
@@ -708,6 +708,6 @@ PetscErrorCode Prediction(UserCtx *user)
   Contra2Cart(user);
 
 
-  SNESDestroy(snes);
+  SNESDestroy(&snes);
   return 0;
 }

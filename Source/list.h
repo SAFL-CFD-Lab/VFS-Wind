@@ -16,7 +16,7 @@ typedef struct list{
 } List;
 
 void initlist(List *ilist) {
-  ilist->head = PETSC_NULL;
+  ilist->head = NULL;
 }
 
 void insertnode(List *ilist, PetscInt Node)
@@ -25,7 +25,7 @@ void insertnode(List *ilist, PetscInt Node)
   node *current;
   current = ilist->head;
 
-  PetscTruth Exist = PETSC_FALSE;
+  PetscBool Exist = PETSC_FALSE;
   while(current) {
     if (Node == current->Node) {
       Exist = PETSC_TRUE;
@@ -67,7 +67,7 @@ typedef struct IBMList {
 } IBMList;
 
 void InitIBMList(IBMList *ilist) {
-  ilist->head = PETSC_NULL;
+  ilist->head = NULL;
 }
 
 void AddIBMNode(IBMList *ilist, IBMInfo ibm_intp)

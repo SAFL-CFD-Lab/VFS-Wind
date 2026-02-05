@@ -13,15 +13,15 @@ extern PetscInt immersed;
 
 PetscErrorCode MyFieldRestriction(UserCtx *user)
 {
-  DA	da = user->da, fda = user->fda;
+  DM	da = user->da, fda = user->fda;
 
-  DA	da_f = *user->da_f;
+  DM	da_f = *user->da_f;
 
   UserCtx *user_f = user->user_f;
-  DA	fda_f = user_f->fda;
+  DM	fda_f = user_f->fda;
 
-  DALocalInfo	info;
-  DAGetLocalInfo(da, &info);
+  DMDALocalInfo	info;
+  DMDAGetLocalInfo(da, &info);
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -44,8 +44,8 @@ PetscErrorCode MyFieldRestriction(UserCtx *user)
   if (ye==my) lye = ye-1;
   if (ze==mz) lze = ze-1;
 
-  DAVecGetArray(fda, user->Ucont, &ucont);
-  DAVecGetArray(fda_f, user_f->lUcont, &ucont_f);
+  DMDAVecGetArray(fda, user->Ucont, &ucont);
+  DMDAVecGetArray(fda_f, user_f->lUcont, &ucont_f);
 
   if (*(user->isc)) ia = 0;
   else ia = 1;
@@ -95,22 +95,22 @@ PetscErrorCode MyFieldRestriction(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(fda, user->Ucont, &ucont);
-  DAVecRestoreArray(fda_f, user_f->lUcont, &ucont_f);
+  DMDAVecRestoreArray(fda, user->Ucont, &ucont);
+  DMDAVecRestoreArray(fda_f, user_f->lUcont, &ucont_f);
   
-  DAGlobalToLocalBegin(fda, user->Ucont, INSERT_VALUES, user->lUcont);
-  DAGlobalToLocalEnd(fda, user->Ucont, INSERT_VALUES, user->lUcont);
+  DMGlobalToLocalBegin(fda, user->Ucont, INSERT_VALUES, user->lUcont);
+  DMGlobalToLocalEnd(fda, user->Ucont, INSERT_VALUES, user->lUcont);
 
   VecCopy(user->Ucont, user->Ucont_MG);
 
   PetscReal ***p, ***p_f;
 
-  DAVecGetArray(da, user->P, &p);
-  DAVecGetArray(da_f, user_f->lP, &p_f);
+  DMDAVecGetArray(da, user->P, &p);
+  DMDAVecGetArray(da_f, user_f->lP, &p_f);
 
   Cmpnts ***ucat, ***ucat_f;
-  DAVecGetArray(user_f->fda, user_f->lUcat, &ucat_f);
-  DAVecGetArray(user->fda, user->Ucat, &ucat); 
+  DMDAVecGetArray(user_f->fda, user_f->lUcat, &ucat_f);
+  DMDAVecGetArray(user->fda, user->Ucat, &ucat); 
   for (k=lzs; k<lze; k++) {
     for (j=lys; j<lye; j++) {
       for (i=lxs; i<lxe; i++) {
@@ -155,17 +155,17 @@ PetscErrorCode MyFieldRestriction(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(user->fda, user->Ucat, &ucat);
-  DAVecRestoreArray(user_f->fda, user_f->lUcat, &ucat_f);
+  DMDAVecRestoreArray(user->fda, user->Ucat, &ucat);
+  DMDAVecRestoreArray(user_f->fda, user_f->lUcat, &ucat_f);
   
-  DAVecRestoreArray(da, user->P, &p);
-  DAVecRestoreArray(da_f, user_f->lP, &p_f);
+  DMDAVecRestoreArray(da, user->P, &p);
+  DMDAVecRestoreArray(da_f, user_f->lP, &p_f);
   
-  DAGlobalToLocalBegin(da, user->P, INSERT_VALUES, user->lP);
-  DAGlobalToLocalEnd(da, user->P, INSERT_VALUES, user->lP);
+  DMGlobalToLocalBegin(da, user->P, INSERT_VALUES, user->lP);
+  DMGlobalToLocalEnd(da, user->P, INSERT_VALUES, user->lP);
 
-  DAGlobalToLocalBegin(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
-  DAGlobalToLocalEnd(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
+  DMGlobalToLocalBegin(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
+  DMGlobalToLocalEnd(user->fda, user->Ucat, INSERT_VALUES, user->lUcat);
 		      
   return 0;
 }
@@ -173,8 +173,8 @@ PetscErrorCode MyFieldRestriction(UserCtx *user)
 PetscErrorCode GhostNodeVelocity(UserCtx *user)
 {
 
-  DA da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -199,16 +199,16 @@ PetscErrorCode GhostNodeVelocity(UserCtx *user)
   if (ye==my) lye = ye-1;
   if (ze==mz) lze = ze-1;
 
-  DAGetGhostedCoordinates(da, &Coor);
-  DAVecGetArray(fda, Coor, &coor);
-/*   DAVecGetArray(fda, user->Ucont, &ucont); */
-  DAVecGetArray(fda, user->Bcs.Ubcs, &ubcs);
-  DAVecGetArray(fda, user->Ucat,  &ucat);
+  DMGetCoordinatesLocal(da, &Coor);
+  DMDAVecGetArray(fda, Coor, &coor);
+/*   DMDAVecGetArray(fda, user->Ucont, &ucont); */
+  DMDAVecGetArray(fda, user->Bcs.Ubcs, &ubcs);
+  DMDAVecGetArray(fda, user->Ucat,  &ucat);
 
 
-  DAVecGetArray(fda, user->lCsi,  &csi);
-  DAVecGetArray(fda, user->lEta,  &eta);
-  DAVecGetArray(fda, user->lZet,  &zet);
+  DMDAVecGetArray(fda, user->lCsi,  &csi);
+  DMDAVecGetArray(fda, user->lEta,  &eta);
+  DMDAVecGetArray(fda, user->lZet,  &zet);
 
 /*   Contra2Cart(user, user->lUcont, user->Ucat); */
 /*   if (user->thislevel == user->mglevels-1) { */
@@ -630,32 +630,32 @@ PetscErrorCode GhostNodeVelocity(UserCtx *user)
     }
   }
 
-/*   DAVecRestoreArray(fda, user->Ucont, &ucont); */
-  DAVecRestoreArray(fda, user->Bcs.Ubcs, &ubcs);
-  DAVecRestoreArray(fda, user->Ucat,  &ucat);
-  DAVecRestoreArray(fda, Coor, &coor);
+/*   DMDAVecRestoreArray(fda, user->Ucont, &ucont); */
+  DMDAVecRestoreArray(fda, user->Bcs.Ubcs, &ubcs);
+  DMDAVecRestoreArray(fda, user->Ucat,  &ucat);
+  DMDAVecRestoreArray(fda, Coor, &coor);
 
-  DAVecRestoreArray(fda, user->lCsi,  &csi);
-  DAVecRestoreArray(fda, user->lEta,  &eta);
-  DAVecRestoreArray(fda, user->lZet,  &zet);
+  DMDAVecRestoreArray(fda, user->lCsi,  &csi);
+  DMDAVecRestoreArray(fda, user->lEta,  &eta);
+  DMDAVecRestoreArray(fda, user->lZet,  &zet);
 
-  //  DAVecRestoreArray(fda, user->Ucont_o, &ucont_o);
+  //  DMDAVecRestoreArray(fda, user->Ucont_o, &ucont_o);
 
-  DAGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
-  DAGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+  DMGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+  DMGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
   return(0);
   
 }
 
 PetscErrorCode MyRKRHSRestriction(UserCtx *user)
 {
-  DA	da = user->da, fda = user->fda;
+  DM	da = user->da, fda = user->fda;
 
   UserCtx *user_f = user->user_f;
-  DA	fda_f = user_f->fda;
+  DM	fda_f = user_f->fda;
 
-  DALocalInfo	info;
-  DAGetLocalInfo(da, &info);
+  DMDALocalInfo	info;
+  DMDAGetLocalInfo(da, &info);
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -688,12 +688,12 @@ PetscErrorCode MyRKRHSRestriction(UserCtx *user)
   else ka = 1;
 
   VecSet(user->Forcing, 0.);
-  DAVecGetArray(fda, user->Forcing, &f);
+  DMDAVecGetArray(fda, user->Forcing, &f);
   Vec lRhs;
   VecDuplicate(user_f->lUcont, &lRhs);
-  DAGlobalToLocalBegin(fda_f, user_f->Rhs, INSERT_VALUES, lRhs);
-  DAGlobalToLocalEnd(fda_f, user_f->Rhs, INSERT_VALUES, lRhs);
-  DAVecGetArray(fda_f, lRhs, &rhs_f);
+  DMGlobalToLocalBegin(fda_f, user_f->Rhs, INSERT_VALUES, lRhs);
+  DMGlobalToLocalEnd(fda_f, user_f->Rhs, INSERT_VALUES, lRhs);
+  DMDAVecGetArray(fda_f, lRhs, &rhs_f);
 
   for (k=lzs; k<lze; k++) {
     for (j=lys; j<lye; j++) {
@@ -776,10 +776,10 @@ PetscErrorCode MyRKRHSRestriction(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(fda, user->Forcing, &f);
+  DMDAVecRestoreArray(fda, user->Forcing, &f);
 /*   VecScale(user->Forcing, -1); */
-  DAVecRestoreArray(fda_f, lRhs, &rhs_f);
-  VecDestroy(lRhs);
+  DMDAVecRestoreArray(fda_f, lRhs, &rhs_f);
+  VecDestroy(&lRhs);
   return 0;
 }
 
@@ -821,15 +821,15 @@ PetscErrorCode MyRKRHSRestriction(UserCtx *user)
 
 PetscErrorCode MyRKRHSInterpolation(UserCtx *user)
 {
-  DA	da = user->da, fda = user->fda;
+  DM	da = user->da, fda = user->fda;
 
-  DA	da_c = *user->da_c;
+  DM	da_c = *user->da_c;
 
   UserCtx *user_c = user->user_c;
 
-  DA	fda_c = user_c->fda;
+  DM	fda_c = user_c->fda;
 
-  DALocalInfo	info = user->info;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -868,21 +868,21 @@ PetscErrorCode MyRKRHSInterpolation(UserCtx *user)
   VecSet(dU, 0.);
 
   Vec ldU;
-  DAGetLocalVector(fda, &ldU);
+  DMGetLocalVector(fda, &ldU);
   VecSet(ldU, 0.);
-  DAVecGetArray(fda, ldU, &du);
+  DMDAVecGetArray(fda, ldU, &du);
 
 
   VecWAXPY(user_c->Forcing, -1., user_c->Ucont_MG, user_c->Ucont);
 
   Vec lForcing;
-  DACreateLocalVector(fda_c, &lForcing);
-  DAGlobalToLocalBegin(fda_c, user_c->Forcing, INSERT_VALUES, lForcing);
-  DAGlobalToLocalEnd(fda_c, user_c->Forcing, INSERT_VALUES, lForcing);
+  DMCreateLocalVector(fda_c, &lForcing);
+  DMGlobalToLocalBegin(fda_c, user_c->Forcing, INSERT_VALUES, lForcing);
+  DMGlobalToLocalEnd(fda_c, user_c->Forcing, INSERT_VALUES, lForcing);
 
-  DAVecGetArray(fda_c, lForcing, &f);
+  DMDAVecGetArray(fda_c, lForcing, &f);
 
-  DAVecGetArray(da_c, *(user->lNvert_c), &nvert_c);
+  DMDAVecGetArray(da_c, *(user->lNvert_c), &nvert_c);
 
 /*   totally wrong! */
 /*     1) du is flux not velocity! therefore surface or aj should be */
@@ -905,11 +905,11 @@ PetscErrorCode MyRKRHSInterpolation(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(fda, ldU, &du);
-  DALocalToLocalBegin(fda, ldU, INSERT_VALUES, ldU);
-  DALocalToLocalEnd(fda, ldU, INSERT_VALUES, ldU);
+  DMDAVecRestoreArray(fda, ldU, &du);
+  DMLocalToLocalBegin(fda, ldU, INSERT_VALUES, ldU);
+  DMLocalToLocalEnd(fda, ldU, INSERT_VALUES, ldU);
 
-  DAVecGetArray(fda, ldU, &du);
+  DMDAVecGetArray(fda, ldU, &du);
   for (k=lzs; k<lze; k++) {
     for (j=lys; j<lye; j++) {      
       for (i=lxs; i<lxe; i++) {
@@ -940,11 +940,11 @@ PetscErrorCode MyRKRHSInterpolation(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(fda, ldU, &du);
-  DALocalToLocalBegin(fda, ldU, INSERT_VALUES, ldU);
-  DALocalToLocalEnd(fda, ldU, INSERT_VALUES, ldU);
+  DMDAVecRestoreArray(fda, ldU, &du);
+  DMLocalToLocalBegin(fda, ldU, INSERT_VALUES, ldU);
+  DMLocalToLocalEnd(fda, ldU, INSERT_VALUES, ldU);
 
-  DAVecGetArray(fda, ldU, &du);
+  DMDAVecGetArray(fda, ldU, &du);
   for (k=lzs; k<lze; k++) {
     for (j=lys; j<lye; j++) {
       if (j%2) {
@@ -974,11 +974,11 @@ PetscErrorCode MyRKRHSInterpolation(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(fda, ldU, &du);
-  DALocalToLocalBegin(fda, ldU, INSERT_VALUES, ldU);
-  DALocalToLocalEnd(fda, ldU, INSERT_VALUES, ldU);
+  DMDAVecRestoreArray(fda, ldU, &du);
+  DMLocalToLocalBegin(fda, ldU, INSERT_VALUES, ldU);
+  DMLocalToLocalEnd(fda, ldU, INSERT_VALUES, ldU);
 
-  DAVecGetArray(fda, ldU, &du);
+  DMDAVecGetArray(fda, ldU, &du);
 
   for (k=lzs; k<lze; k++) {
     if ((k%2)) {
@@ -992,22 +992,22 @@ PetscErrorCode MyRKRHSInterpolation(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(fda, ldU, &du);
-  DAVecRestoreArray(fda_c, lForcing, &f);
+  DMDAVecRestoreArray(fda, ldU, &du);
+  DMDAVecRestoreArray(fda_c, lForcing, &f);
 
-  DALocalToGlobal(fda, ldU, INSERT_VALUES, dU);
+  DMLocalToGlobal(fda, ldU, INSERT_VALUES, dU);
 
 
   VecAXPY(user->Ucont, 1., dU);
 
-  DAGlobalToLocalBegin(fda, user->Ucont, INSERT_VALUES, user->lUcont);
-  DAGlobalToLocalEnd(fda, user->Ucont, INSERT_VALUES, user->lUcont);
+  DMGlobalToLocalBegin(fda, user->Ucont, INSERT_VALUES, user->lUcont);
+  DMGlobalToLocalEnd(fda, user->Ucont, INSERT_VALUES, user->lUcont);
 
-  DARestoreLocalVector(fda, &ldU);
-  VecDestroy(dU);
-  VecDestroy(lForcing);
+  DMRestoreLocalVector(fda, &ldU);
+  VecDestroy(&dU);
+  VecDestroy(&lForcing);
 
-  DAVecRestoreArray(da_c, *(user->lNvert_c), &nvert_c);
+  DMDAVecRestoreArray(da_c, *(user->lNvert_c), &nvert_c);
   
   return 0;
 }
@@ -1049,7 +1049,7 @@ PetscErrorCode TSMG(UserCtx *user)
   }
 
   user_mg = user;
-  PetscTruth MG_Converged = PETSC_FALSE;
+  PetscBool MG_Converged = PETSC_FALSE;
   PetscReal norm, norm_old, temp;
 
   norm_old=0.;
@@ -1094,7 +1094,7 @@ PetscErrorCode TSMG(UserCtx *user)
 
   user_mg = user;
   for (l=mglevels-1; l>=0; l--) {
-    VecDestroy(user_mg->Ucont_o);
+    VecDestroy(&user_mg->Ucont_o);
     user_mg = user_mg->user_c;
   }
 

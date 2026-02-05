@@ -35,8 +35,8 @@ extern void Calculate_normal(Cmpnts csi, Cmpnts eta, Cmpnts zet, double ni[3], d
 void Contra2Cart(UserCtx *user)
 {
 	Contra2Cart_2(user);
-	//DALocalToLocalBegin(user->da, user->lUstar, INSERT_VALUES, user->lUstar);
-	//DALocalToLocalEnd(user->da, user->lUstar, INSERT_VALUES, user->lUstar);
+	//DMLocalToLocalBegin(user->da, user->lUstar, INSERT_VALUES, user->lUstar);
+	//DMLocalToLocalEnd(user->da, user->lUstar, INSERT_VALUES, user->lUstar);
 }
 
 void Contra2Cart_single(Cmpnts &csi, Cmpnts &eta, Cmpnts &zet, Cmpnts &ucont, Cmpnts *ucat)
@@ -64,8 +64,8 @@ void Contra2Cart_single(Cmpnts &csi, Cmpnts &eta, Cmpnts &zet, Cmpnts &ucont, Cm
 
 void Contra2Cart_2(UserCtx *user)
 {
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info = user->info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt  	ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -98,32 +98,32 @@ void Contra2Cart_2(UserCtx *user)
 	Cmpnts	***csi, ***eta, ***zet;
 	Cmpnts	***coor;
 	
-	DAGetGhostedCoordinates(da, &Coor);
-	DAVecGetArray(fda, Coor, &coor);
+	DMGetCoordinatesLocal(da, &Coor);
+	DMDAVecGetArray(fda, Coor, &coor);
 	
 	if(levelset) {
-		DAVecGetArray(da, user->lMu, &mu);
-		DAVecGetArray(da, user->lDensity, &rho);
-		DAVecGetArray(da, user->lLevelset, &llevel);
+		DMDAVecGetArray(da, user->lMu, &mu);
+		DMDAVecGetArray(da, user->lDensity, &rho);
+		DMDAVecGetArray(da, user->lLevelset, &llevel);
 	}
 
-	DAVecGetArray(fda, user->lICsi, &icsi);
-	DAVecGetArray(fda, user->lJEta, &jeta);
-	DAVecGetArray(fda, user->lKZet, &kzet);
+	DMDAVecGetArray(fda, user->lICsi, &icsi);
+	DMDAVecGetArray(fda, user->lJEta, &jeta);
+	DMDAVecGetArray(fda, user->lKZet, &kzet);
 	
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
 	
-	DAVecGetArray(da,  Aj,  &aj);
-	DAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da,  Aj,  &aj);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
 
 	PetscInt rank;
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	
-	DAVecGetArray(fda, user->lUcont, &lucont);
-	DAVecGetArray(fda, user->Ucat,  &ucat);
-	DAVecGetArray(fda, user->lUcat_old,  &lucat_o);
+	DMDAVecGetArray(fda, user->lUcont, &lucont);
+	DMDAVecGetArray(fda, user->Ucat,  &ucat);
+	DMDAVecGetArray(fda, user->lUcat_old,  &lucat_o);
 	
 	// important
 	if(periodic)
@@ -246,14 +246,14 @@ void Contra2Cart_2(UserCtx *user)
 		}
 	}
 	
-	DAVecRestoreArray(fda, user->Ucat,  &ucat);
+	DMDAVecRestoreArray(fda, user->Ucat,  &ucat);
 	
-	DAGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
-	DAGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
 	
 	if(periodic) {
-		DAVecGetArray(fda, user->Ucat,  &ucat);
-		DAVecGetArray(fda, user->lUcat,  &lucat);
+		DMDAVecGetArray(fda, user->Ucat,  &ucat);
+		DMDAVecGetArray(fda, user->lUcat,  &lucat);
 		for (k=zs; k<ze; k++)
 		for (j=ys; j<ye; j++)
 		for (i=xs; i<xe; i++) {
@@ -282,21 +282,21 @@ void Contra2Cart_2(UserCtx *user)
 				ucat[k][j][i] = lucat[c][b][a];
 			}
 		}
-		DAVecRestoreArray(fda, user->Ucat,  &ucat);
-		DAVecRestoreArray(fda, user->lUcat,  &lucat);
+		DMDAVecRestoreArray(fda, user->Ucat,  &ucat);
+		DMDAVecRestoreArray(fda, user->lUcat,  &lucat);
 	}
 	
 	//second call is needed
-	DAGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
-        DAGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+        DMGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
 
-	//DALocalToGlobal(fda, user->lUcat, INSERT_VALUES, user->Ucat);
+	//DMLocalToGlobal(fda, user->lUcat, INSERT_VALUES, user->Ucat);
 	
-	DAVecGetArray(fda, user->lUcat,  &lucat);
-	DAVecGetArray(fda, user->Ucat,  &ucat);
+	DMDAVecGetArray(fda, user->lUcat,  &lucat);
+	DMDAVecGetArray(fda, user->Ucat,  &ucat);
     
 	PetscReal ***ustar;
-	DAVecGetArray(da, user->lUstar, &ustar);
+	DMDAVecGetArray(da, user->lUstar, &ustar);
 	
 	
 	for (k=zs; k<ze; k++)
@@ -681,37 +681,37 @@ void Contra2Cart_2(UserCtx *user)
 		}
 	}
 	
-	DAVecRestoreArray(da, user->lUstar, &ustar);
-	DAVecRestoreArray(fda, user->lUcont, &lucont);
-	DAVecRestoreArray(fda, user->lUcat,  &lucat);
-	DAVecRestoreArray(fda, user->Ucat,  &ucat);
-	DAVecRestoreArray(fda, user->lUcat_old,  &lucat_o);
+	DMDAVecRestoreArray(da, user->lUstar, &ustar);
+	DMDAVecRestoreArray(fda, user->lUcont, &lucont);
+	DMDAVecRestoreArray(fda, user->lUcat,  &lucat);
+	DMDAVecRestoreArray(fda, user->Ucat,  &ucat);
+	DMDAVecRestoreArray(fda, user->lUcat_old,  &lucat_o);
 	
-	DAGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
-	DAGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+	DMGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
 	
 	if(levelset) {
-		DAVecRestoreArray(da, user->lMu, &mu);
-		DAVecRestoreArray(da, user->lDensity, &rho);
-		DAVecRestoreArray(da, user->lLevelset, &llevel);
+		DMDAVecRestoreArray(da, user->lMu, &mu);
+		DMDAVecRestoreArray(da, user->lDensity, &rho);
+		DMDAVecRestoreArray(da, user->lLevelset, &llevel);
         }
 
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);
 	
-	DAVecRestoreArray(fda, user->lICsi, &icsi);
-	DAVecRestoreArray(fda, user->lJEta, &jeta);
-	DAVecRestoreArray(fda, user->lKZet, &kzet);
+	DMDAVecRestoreArray(fda, user->lICsi, &icsi);
+	DMDAVecRestoreArray(fda, user->lJEta, &jeta);
+	DMDAVecRestoreArray(fda, user->lKZet, &kzet);
   
-	DAVecRestoreArray(da,  Aj,  &aj);
-	DAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da,  Aj,  &aj);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
 	
-	DAVecRestoreArray(fda, Coor, &coor);
+	DMDAVecRestoreArray(fda, Coor, &coor);
 	
 	if(periodic) {
-		DAVecGetArray(fda, user->Ucat,  &ucat);
-		DAVecGetArray(fda, user->lUcat,  &lucat);
+		DMDAVecGetArray(fda, user->Ucat,  &ucat);
+		DMDAVecGetArray(fda, user->lUcat,  &lucat);
 		for (k=zs; k<ze; k++)
 		for (j=ys; j<ye; j++)
 		for (i=xs; i<xe; i++) {
@@ -740,11 +740,11 @@ void Contra2Cart_2(UserCtx *user)
 				ucat[k][j][i] = lucat[c][b][a];
 			}
 		}
-		DAVecRestoreArray(fda, user->Ucat,  &ucat);
-		DAVecRestoreArray(fda, user->lUcat,  &lucat);
+		DMDAVecRestoreArray(fda, user->Ucat,  &ucat);
+		DMDAVecRestoreArray(fda, user->lUcat,  &lucat);
 
-		DAGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat); //101229
-		DAGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
+		DMGlobalToLocalBegin(fda, user->Ucat, INSERT_VALUES, user->lUcat); //101229
+		DMGlobalToLocalEnd(fda, user->Ucat, INSERT_VALUES, user->lUcat);
 	}
 };
 
@@ -753,8 +753,8 @@ PetscErrorCode Convection(UserCtx *user, Vec Ucont, Vec Ucat, Vec Conv)
   //  Vec		Ucont = user->lUcont, Ucat = user->lUcat;
   
   Cmpnts	***ucont, ***ucat;
-  DA		da = user->da, fda = user->fda;
-  DALocalInfo	info;
+  DM		da = user->da, fda = user->fda;
+  DMDALocalInfo	info;
   PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
   PetscInt	mx, my, mz; // Dimensions in three directions
   PetscInt	i, j, k;
@@ -769,25 +769,25 @@ PetscErrorCode Convection(UserCtx *user, Vec Ucont, Vec Ucat, Vec Conv)
 
   PetscReal	***nvert;
 
-  DAGetLocalInfo(da, &info);
+  DMDAGetLocalInfo(da, &info);
   mx = info.mx; my = info.my; mz = info.mz;
   xs = info.xs; xe = xs + info.xm;
   ys = info.ys; ye = ys + info.ym;
   zs = info.zs; ze = zs + info.zm;
 
-  DAVecGetArray(fda, Ucont, &ucont);
-  DAVecGetArray(fda, Ucat,  &ucat);
-  DAVecGetArray(fda, Conv,  &conv);
+  DMDAVecGetArray(fda, Ucont, &ucont);
+  DMDAVecGetArray(fda, Ucat,  &ucat);
+  DMDAVecGetArray(fda, Conv,  &conv);
 
   VecDuplicate(Ucont, &Fp1);
   VecDuplicate(Ucont, &Fp2);
   VecDuplicate(Ucont, &Fp3);
 
-  DAVecGetArray(fda, Fp1, &fp1);
-  DAVecGetArray(fda, Fp2, &fp2);
-  DAVecGetArray(fda, Fp3, &fp3);
+  DMDAVecGetArray(fda, Fp1, &fp1);
+  DMDAVecGetArray(fda, Fp2, &fp2);
+  DMDAVecGetArray(fda, Fp3, &fp3);
 
-  DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
 
   /*  for (j=ys; j<ye; j++) {
     for (i=xs; i<xe; i++) {
@@ -855,7 +855,7 @@ PetscErrorCode Convection(UserCtx *user, Vec Ucont, Vec Ucat, Vec Conv)
   if (ye==my) lye = ye-1;
   if (ze==mz) lze = ze-1;
 
-/*   PetscBarrier(PETSC_NULL); */
+/*   PetscBarrier(NULL); */
 /*   PetscPrintf(PETSC_COMM_WORLD, "test a "); */
   /* Calculating the convective terms on cell centers.
      First calcualte the contribution from i direction
@@ -909,7 +909,7 @@ PetscErrorCode Convection(UserCtx *user, Vec Ucont, Vec Ucat, Vec Conv)
     }
   }
 
-/*   PetscBarrier(PETSC_NULL); */
+/*   PetscBarrier(NULL); */
 /*   PetscPrintf(PETSC_COMM_WORLD, "test aa "); */
 
   /* j direction */
@@ -960,7 +960,7 @@ PetscErrorCode Convection(UserCtx *user, Vec Ucont, Vec Ucat, Vec Conv)
     }
   }
 
-/*   PetscBarrier(PETSC_NULL); */
+/*   PetscBarrier(NULL); */
 /*   PetscPrintf(PETSC_COMM_WORLD, "test aaa "); */
 
   /* k direction */
@@ -1024,7 +1024,7 @@ PetscErrorCode Convection(UserCtx *user, Vec Ucont, Vec Ucat, Vec Conv)
     }
     }*/
 
-/*   PetscBarrier(PETSC_NULL); */
+/*   PetscBarrier(NULL); */
 /*   PetscPrintf(PETSC_COMM_WORLD, "test aaaa "); */
 
   /* Calculate the convective terms under cartesian coordinates */
@@ -1048,21 +1048,21 @@ PetscErrorCode Convection(UserCtx *user, Vec Ucont, Vec Ucat, Vec Conv)
     }
   }
 
-/*   PetscBarrier(PETSC_NULL); */
+/*   PetscBarrier(NULL); */
 /*   PetscPrintf(PETSC_COMM_WORLD, "test aaaaa "); */
 
-  DAVecRestoreArray(fda, Ucont, &ucont);
-  DAVecRestoreArray(fda, Ucat,  &ucat);
-  DAVecRestoreArray(fda, Conv,  &conv);
+  DMDAVecRestoreArray(fda, Ucont, &ucont);
+  DMDAVecRestoreArray(fda, Ucat,  &ucat);
+  DMDAVecRestoreArray(fda, Conv,  &conv);
 
-  DAVecRestoreArray(fda, Fp1, &fp1);
-  DAVecRestoreArray(fda, Fp2, &fp2);
-  DAVecRestoreArray(fda, Fp3, &fp3);
-  DAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, Fp1, &fp1);
+  DMDAVecRestoreArray(fda, Fp2, &fp2);
+  DMDAVecRestoreArray(fda, Fp3, &fp3);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
-  VecDestroy(Fp1);
-  VecDestroy(Fp2);
-  VecDestroy(Fp3);
+  VecDestroy(&Fp1);
+  VecDestroy(&Fp2);
+  VecDestroy(&Fp3);
 
 
   return (0);
@@ -1081,8 +1081,8 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 
 	PetscReal	***nvert;
 
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -1104,7 +1104,7 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 
 	solid = 0.5;
   
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -1124,40 +1124,40 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
 
-	DAVecGetArray(fda, Ucont, &ucont);
-	DAVecGetArray(fda, Ucat,  &ucat);
-	//DAVecGetArray(fda, user->lUcat_old,  &lucat_old);
+	DMDAVecGetArray(fda, Ucont, &ucont);
+	DMDAVecGetArray(fda, Ucat,  &ucat);
+	//DMDAVecGetArray(fda, user->lUcat_old,  &lucat_old);
 	
-	DAVecGetArray(fda, Visc,  &visc);
+	DMDAVecGetArray(fda, Visc,  &visc);
 
-	DAVecGetArray(fda, Csi, &csi);
-	DAVecGetArray(fda, Eta, &eta);
-	DAVecGetArray(fda, Zet, &zet);
+	DMDAVecGetArray(fda, Csi, &csi);
+	DMDAVecGetArray(fda, Eta, &eta);
+	DMDAVecGetArray(fda, Zet, &zet);
 
-	DAVecGetArray(fda, user->lICsi, &icsi);
-	DAVecGetArray(fda, user->lIEta, &ieta);
-	DAVecGetArray(fda, user->lIZet, &izet);
+	DMDAVecGetArray(fda, user->lICsi, &icsi);
+	DMDAVecGetArray(fda, user->lIEta, &ieta);
+	DMDAVecGetArray(fda, user->lIZet, &izet);
 
-	DAVecGetArray(fda, user->lJCsi, &jcsi);
-	DAVecGetArray(fda, user->lJEta, &jeta);
-	DAVecGetArray(fda, user->lJZet, &jzet);
+	DMDAVecGetArray(fda, user->lJCsi, &jcsi);
+	DMDAVecGetArray(fda, user->lJEta, &jeta);
+	DMDAVecGetArray(fda, user->lJZet, &jzet);
 
-	DAVecGetArray(fda, user->lKCsi, &kcsi);
-	DAVecGetArray(fda, user->lKEta, &keta);
-	DAVecGetArray(fda, user->lKZet, &kzet);
+	DMDAVecGetArray(fda, user->lKCsi, &kcsi);
+	DMDAVecGetArray(fda, user->lKEta, &keta);
+	DMDAVecGetArray(fda, user->lKZet, &kzet);
 
-	DAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
 
 	VecDuplicate(Ucont, &Fp1);
 	VecDuplicate(Ucont, &Fp2);
 	VecDuplicate(Ucont, &Fp3);
 
-	DAVecGetArray(fda, Fp1, &fp1);
-	DAVecGetArray(fda, Fp2, &fp2);
-	DAVecGetArray(fda, Fp3, &fp3);
+	DMDAVecGetArray(fda, Fp1, &fp1);
+	DMDAVecGetArray(fda, Fp2, &fp2);
+	DMDAVecGetArray(fda, Fp3, &fp3);
 
-	DAVecGetArray(da, user->lAj, &aj);
-	//DAVecGetArray(da, user->lVolume, &volume);
+	DMDAVecGetArray(da, user->lAj, &aj);
+	//DMDAVecGetArray(da, user->lVolume, &volume);
     
 	PetscReal ***distance, ***lnu_t;	//***lS, 
 	Cmpnts2 ***K_Omega;
@@ -1165,21 +1165,21 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 	
 	//seokkoo
 	if(les) {
-		//DAVecGetArray(da, user->lCs, &Cs);
-		//DAVecGetArray(fda, user->lNu_t_IJK, &lnu_t_IJK);
-		DAVecGetArray(da, user->lNu_t, &lnu_t);
+		//DMDAVecGetArray(da, user->lCs, &Cs);
+		//DMDAVecGetArray(fda, user->lNu_t_IJK, &lnu_t_IJK);
+		DMDAVecGetArray(da, user->lNu_t, &lnu_t);
 	}
 	else if (rans) {
-		DAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
-		DAVecGetArray(user->da, user->Distance, &distance);
-		//DAVecGetArray(user->da, user->lSrans, &lS);
-		DAVecGetArray(da, user->lNu_t, &lnu_t);
+		DMDAVecGetArray(user->fda2, user->lK_Omega, &K_Omega);
+		DMDAVecGetArray(user->da, user->Distance, &distance);
+		//DMDAVecGetArray(user->da, user->lSrans, &lS);
+		DMDAVecGetArray(da, user->lNu_t, &lnu_t);
 	}
     
   /* The visc flux on each surface center is stored at previous integer node */
 
   // i direction
-	DAVecGetArray(da, user->lIAj, &iaj);
+	DMDAVecGetArray(da, user->lIAj, &iaj);
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
 	for (i=lxs-1; i<lxe; i++) {
@@ -1263,11 +1263,11 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 		fp1[k][j][i].z = (g11 * dwdc + g21 * dwde + g31 * dwdz + r13 * csi0 + r23 * csi1 + r33 * csi2) * ajc * (nu+nu_t);
 	}
   
-	DAVecRestoreArray(da, user->lIAj, &iaj);  
+	DMDAVecRestoreArray(da, user->lIAj, &iaj);  
 
   
   // j direction
-	DAVecGetArray(da, user->lJAj, &jaj);
+	DMDAVecGetArray(da, user->lJAj, &jaj);
 	for (k=lzs; k<lze; k++)
 	for (j=lys-1; j<lye; j++)
 	for (i=lxs; i<lxe; i++) {
@@ -1356,11 +1356,11 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 	}
 
 
-	DAVecRestoreArray(da, user->lJAj, &jaj);
+	DMDAVecRestoreArray(da, user->lJAj, &jaj);
   
   
   // k direction
-	DAVecGetArray(da, user->lKAj, &kaj);
+	DMDAVecGetArray(da, user->lKAj, &kaj);
 	
 	for (k=lzs-1; k<lze; k++)
 	for (j=lys; j<lye; j++)
@@ -1443,26 +1443,26 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 		fp3[k][j][i].y = (g11 * dvdc + g21 * dvde + g31 * dvdz + r12 * zet0 + r22 * zet1 + r32 * zet2) * ajc * (nu+nu_t);
 		fp3[k][j][i].z = (g11 * dwdc + g21 * dwde + g31 * dwdz + r13 * zet0 + r23 * zet1 + r33 * zet2) * ajc * (nu+nu_t);
 	}
-	DAVecRestoreArray(da, user->lKAj, &kaj);
+	DMDAVecRestoreArray(da, user->lKAj, &kaj);
 
-	DAVecRestoreArray(fda, Fp1, &fp1);
-	DAVecRestoreArray(fda, Fp2, &fp2);
-	DAVecRestoreArray(fda, Fp3, &fp3);
+	DMDAVecRestoreArray(fda, Fp1, &fp1);
+	DMDAVecRestoreArray(fda, Fp2, &fp2);
+	DMDAVecRestoreArray(fda, Fp3, &fp3);
 	
-	DALocalToLocalBegin(fda, Fp1, INSERT_VALUES, Fp1);
-	DALocalToLocalEnd(fda, Fp1, INSERT_VALUES, Fp1);
-	DALocalToLocalBegin(fda, Fp2, INSERT_VALUES, Fp2);
-	DALocalToLocalEnd(fda, Fp2, INSERT_VALUES, Fp2);
-	DALocalToLocalBegin(fda, Fp3, INSERT_VALUES, Fp3);
-	DALocalToLocalEnd(fda, Fp3, INSERT_VALUES, Fp3);
+	DMLocalToLocalBegin(fda, Fp1, INSERT_VALUES, Fp1);
+	DMLocalToLocalEnd(fda, Fp1, INSERT_VALUES, Fp1);
+	DMLocalToLocalBegin(fda, Fp2, INSERT_VALUES, Fp2);
+	DMLocalToLocalEnd(fda, Fp2, INSERT_VALUES, Fp2);
+	DMLocalToLocalBegin(fda, Fp3, INSERT_VALUES, Fp3);
+	DMLocalToLocalEnd(fda, Fp3, INSERT_VALUES, Fp3);
 	
-	DAVecGetArray(fda, Fp1, &fp1);
-	DAVecGetArray(fda, Fp2, &fp2);
-	DAVecGetArray(fda, Fp3, &fp3);
+	DMDAVecGetArray(fda, Fp1, &fp1);
+	DMDAVecGetArray(fda, Fp2, &fp2);
+	DMDAVecGetArray(fda, Fp3, &fp3);
 	
-        DAVecGetArray(da, user->lIAj, &iaj);
-        DAVecGetArray(da, user->lJAj, &jaj);
-        DAVecGetArray(da, user->lKAj, &kaj);
+        DMDAVecGetArray(da, user->lIAj, &iaj);
+        DMDAVecGetArray(da, user->lJAj, &jaj);
+        DMDAVecGetArray(da, user->lKAj, &kaj);
 
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
@@ -1473,20 +1473,20 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 	}
 
 	if(les) {
-		//DAVecRestoreArray(da, user->lCs, &Cs);
-		//DAVecRestoreArray(fda, user->lNu_t_IJK, &lnu_t_IJK);
-		DAVecRestoreArray(da, user->lNu_t, &lnu_t);
+		//DMDAVecRestoreArray(da, user->lCs, &Cs);
+		//DMDAVecRestoreArray(fda, user->lNu_t_IJK, &lnu_t_IJK);
+		DMDAVecRestoreArray(da, user->lNu_t, &lnu_t);
 	}
 	else if (rans) {
-		DAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
-		DAVecRestoreArray(user->da, user->Distance, &distance);
-		//DAVecRestoreArray(user->da, user->lSrans, &lS);
-		DAVecRestoreArray(da, user->lNu_t, &lnu_t);
+		DMDAVecRestoreArray(user->fda2, user->lK_Omega, &K_Omega);
+		DMDAVecRestoreArray(user->da, user->Distance, &distance);
+		//DMDAVecRestoreArray(user->da, user->lSrans, &lS);
+		DMDAVecRestoreArray(da, user->lNu_t, &lnu_t);
 	}
 	
-        DAVecRestoreArray(da, user->lIAj, &iaj);
-        DAVecRestoreArray(da, user->lJAj, &jaj);
-        DAVecRestoreArray(da, user->lKAj, &kaj);
+        DMDAVecRestoreArray(da, user->lIAj, &iaj);
+        DMDAVecRestoreArray(da, user->lJAj, &jaj);
+        DMDAVecRestoreArray(da, user->lKAj, &kaj);
 
  
   if (zs==0) {
@@ -1543,39 +1543,39 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
   }
 
 			   
-	DAVecRestoreArray(fda, Ucont, &ucont);
-	DAVecRestoreArray(fda, Ucat,  &ucat);
-	//DAVecRestoreArray(fda, user->lUcat_old,  &lucat_old);
-	DAVecRestoreArray(fda, Visc,  &visc);
+	DMDAVecRestoreArray(fda, Ucont, &ucont);
+	DMDAVecRestoreArray(fda, Ucat,  &ucat);
+	//DMDAVecRestoreArray(fda, user->lUcat_old,  &lucat_old);
+	DMDAVecRestoreArray(fda, Visc,  &visc);
 
-	DAVecRestoreArray(fda, Csi, &csi);
-	DAVecRestoreArray(fda, Eta, &eta);
-	DAVecRestoreArray(fda, Zet, &zet);
+	DMDAVecRestoreArray(fda, Csi, &csi);
+	DMDAVecRestoreArray(fda, Eta, &eta);
+	DMDAVecRestoreArray(fda, Zet, &zet);
 	  
-	DAVecRestoreArray(fda, Fp1, &fp1);
-	DAVecRestoreArray(fda, Fp2, &fp2);
-	DAVecRestoreArray(fda, Fp3, &fp3);
+	DMDAVecRestoreArray(fda, Fp1, &fp1);
+	DMDAVecRestoreArray(fda, Fp2, &fp2);
+	DMDAVecRestoreArray(fda, Fp3, &fp3);
 
-	DAVecRestoreArray(da, user->lAj, &aj);
-	//DAVecRestoreArray(da, user->lVolume, &volume);
+	DMDAVecRestoreArray(da, user->lAj, &aj);
+	//DMDAVecRestoreArray(da, user->lVolume, &volume);
   
-	DAVecRestoreArray(fda, user->lICsi, &icsi);
-	DAVecRestoreArray(fda, user->lIEta, &ieta);
-	DAVecRestoreArray(fda, user->lIZet, &izet);
+	DMDAVecRestoreArray(fda, user->lICsi, &icsi);
+	DMDAVecRestoreArray(fda, user->lIEta, &ieta);
+	DMDAVecRestoreArray(fda, user->lIZet, &izet);
 
-	DAVecRestoreArray(fda, user->lJCsi, &jcsi);
-	DAVecRestoreArray(fda, user->lJEta, &jeta);
-	DAVecRestoreArray(fda, user->lJZet, &jzet);
+	DMDAVecRestoreArray(fda, user->lJCsi, &jcsi);
+	DMDAVecRestoreArray(fda, user->lJEta, &jeta);
+	DMDAVecRestoreArray(fda, user->lJZet, &jzet);
 
-	DAVecRestoreArray(fda, user->lKCsi, &kcsi);
-	DAVecRestoreArray(fda, user->lKEta, &keta);
-	DAVecRestoreArray(fda, user->lKZet, &kzet);
+	DMDAVecRestoreArray(fda, user->lKCsi, &kcsi);
+	DMDAVecRestoreArray(fda, user->lKEta, &keta);
+	DMDAVecRestoreArray(fda, user->lKZet, &kzet);
 
-	DAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
-	VecDestroy(Fp1);
-	VecDestroy(Fp2);
-	VecDestroy(Fp3);
+	VecDestroy(&Fp1);
+	VecDestroy(&Fp2);
+	VecDestroy(&Fp3);
 
   
 	return(0);
@@ -1585,7 +1585,7 @@ PetscErrorCode Viscous(UserCtx *user, Vec Ucont, Vec Ucat, Vec Visc)
 
 PetscErrorCode RungeKutta(UserCtx *user, IBMNodes *ibm, FSInfo *fsi)
 {
-//  DA da = user->da, fda = user->fda;
+//  DM da = user->da, fda = user->fda;
   PetscInt istage;
   PetscReal alfa[4];
 
@@ -1594,8 +1594,8 @@ PetscErrorCode RungeKutta(UserCtx *user, IBMNodes *ibm, FSInfo *fsi)
   alfa[0] = 0.25; alfa[1] = 1/3.; alfa[2] = 0.5; alfa[3] = 1.;
   // Create local working vector for Ucont and Ucat components
 
-/*   DAGlobalToLocalBegin(fda, user->Ucont, INSERT_VALUES, user->lUcont); */
-/*   DAGlobalToLocalEnd(fda, user->Ucont, INSERT_VALUES, user->lUcont); */
+/*   DMGlobalToLocalBegin(fda, user->Ucont, INSERT_VALUES, user->lUcont); */
+/*   DMGlobalToLocalEnd(fda, user->Ucont, INSERT_VALUES, user->lUcont); */
 	
 	COEF_TIME_ACCURACY=1.0;	//seokkoo
 	//time_marching=0;
@@ -1657,8 +1657,8 @@ extern int outflow_scale;
 
 	  VecWAXPY(user[bi].Ucont, alfa[istage] * user[bi].dt * user[bi].st, user[bi].Rhs, user[bi].pUcont);
 
-	  DAGlobalToLocalBegin(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
-	  DAGlobalToLocalEnd(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
+	  DMGlobalToLocalBegin(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
+	  DMGlobalToLocalEnd(user[bi].fda, user[bi].Ucont, INSERT_VALUES, user[bi].lUcont);
 
 		Contra2Cart(user);
 
@@ -1678,14 +1678,14 @@ extern int outflow_scale;
     
     //PetscPrintf(PETSC_COMM_WORLD, "RK-9\n");
 
-	DAGlobalToLocalBegin(user->fda, user[0].Ucont, INSERT_VALUES, user[0].lUcont);
-	DAGlobalToLocalEnd(user->fda, user[0].Ucont, INSERT_VALUES, user[0].lUcont);
+	DMGlobalToLocalBegin(user->fda, user[0].Ucont, INSERT_VALUES, user[0].lUcont);
+	DMGlobalToLocalEnd(user->fda, user[0].Ucont, INSERT_VALUES, user[0].lUcont);
 				
 	//extern void update_ibm_ucont(UserCtx *user);
 	//update_ibm_ucont(&user[0]);
 		
-	DAGlobalToLocalBegin(user[0].fda, user[0].Ucat, INSERT_VALUES, user[0].lUcat);
-	DAGlobalToLocalEnd(user[0].fda, user[0].Ucat, INSERT_VALUES, user[0].lUcat);
+	DMGlobalToLocalBegin(user[0].fda, user[0].Ucat, INSERT_VALUES, user[0].lUcat);
+	DMGlobalToLocalEnd(user[0].fda, user[0].Ucat, INSERT_VALUES, user[0].lUcat);
     
 	//PetscPrintf(PETSC_COMM_WORLD, "RK-10\n");
 
@@ -1695,12 +1695,12 @@ extern int outflow_scale;
     
     //  }
   for (bi=0; bi<block_number; bi++) {
-    VecDestroy(user[bi].Rhs);
+    VecDestroy(&user[bi].Rhs);
 
     VecWAXPY(user[bi].DUold, -1., user[bi].Ucont_o, user[bi].Ucont);
-/*     VecDestroy(user[bi].Ucont_o); */
-    VecDestroy(user[bi].dUcont);
-    VecDestroy(user[bi].pUcont);
+/*     VecDestroy(&user[bi].Ucont_o); */
+    VecDestroy(&user[bi].dUcont);
+    VecDestroy(&user[bi].pUcont);
   }
   //PetscPrintf(PETSC_COMM_WORLD, "RK-100\n");
 
@@ -1709,9 +1709,9 @@ extern int outflow_scale;
 
 PetscErrorCode Spectral(UserCtx *user)
 {
-  DA		da = user->da, fda = user->fda;
+  DM		da = user->da, fda = user->fda;
 
-  DALocalInfo	info = user->info;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -1719,19 +1719,19 @@ PetscErrorCode Spectral(UserCtx *user)
   PetscReal cfl = 0.5;
   PetscReal vnn = 0.5;
 
-  PetscOptionsGetReal(PETSC_NULL, "-cfl", &cfl, PETSC_NULL);
+  PetscOptionsGetReal(NULL, NULL, "-cfl", &cfl, NULL);
   PetscInt i, j, k;
   PetscReal abu, abv, abw, ren = user->ren;
   Cmpnts ***ucont, ***csi, ***eta, ***zet;
   PetscReal ***dt, ***aj;
   PetscReal g1, g2, g3, eigen1, eigen2, eigen3, temp, dtii, dtij, dtik;
   PetscReal dtvi, dtvj, dtvk;
-  DAVecGetArray(fda, user->lUcont, &ucont);
-  DAVecGetArray(fda, user->lCsi, &csi);
-  DAVecGetArray(fda, user->lEta, &eta);
-  DAVecGetArray(fda, user->lZet, &zet);
-  DAVecGetArray(da, user->lAj, &aj);
-  DAVecGetArray(da, user->Dt, &dt);
+  DMDAVecGetArray(fda, user->lUcont, &ucont);
+  DMDAVecGetArray(fda, user->lCsi, &csi);
+  DMDAVecGetArray(fda, user->lEta, &eta);
+  DMDAVecGetArray(fda, user->lZet, &zet);
+  DMDAVecGetArray(da, user->lAj, &aj);
+  DMDAVecGetArray(da, user->Dt, &dt);
   for (k=zs; k<ze; k++) {
     for (j=ys; j<ye; j++) {
       for (i=xs; i<xe; i++) {
@@ -1775,11 +1775,11 @@ PetscErrorCode Spectral(UserCtx *user)
       }
     }
   }
-  DAVecRestoreArray(fda, user->lUcont, &ucont);
-  DAVecRestoreArray(fda, user->lCsi, &csi);
-  DAVecRestoreArray(fda, user->lEta, &eta);
-  DAVecRestoreArray(fda, user->lZet, &zet);
-  DAVecRestoreArray(da, user->lAj, &aj);
-  DAVecRestoreArray(da, user->Dt, &dt);
+  DMDAVecRestoreArray(fda, user->lUcont, &ucont);
+  DMDAVecRestoreArray(fda, user->lCsi, &csi);
+  DMDAVecRestoreArray(fda, user->lEta, &eta);
+  DMDAVecRestoreArray(fda, user->lZet, &zet);
+  DMDAVecRestoreArray(da, user->lAj, &aj);
+  DMDAVecRestoreArray(da, user->Dt, &dt);
   return 0;
 }

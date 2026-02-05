@@ -12,18 +12,18 @@ extern PetscReal L_dim;
 
 PetscErrorCode FormInitialize(UserCtx *user)
 {
-  DA		fda = user->fda;
+  DM		fda = user->fda;
   Vec		Ucont = user->Ucont;
   Cmpnts	***ucont;
 
-  DALocalInfo	info = user->info;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
 
   PetscInt	i, j, k;
 
-  DAVecGetArray(fda, Ucont, &ucont);
+  DMDAVecGetArray(fda, Ucont, &ucont);
 
   for (k=zs; k<ze; k++) {
     for (j=ys; j<ye; j++) {
@@ -35,11 +35,11 @@ PetscErrorCode FormInitialize(UserCtx *user)
     }
   }
 
-  DAVecRestoreArray(fda, Ucont, &ucont);
+  DMDAVecRestoreArray(fda, Ucont, &ucont);
   VecCopy(Ucont, user->Ucat);
   VecCopy(Ucont, user->Bcs.Ubcs);
 
-  DAVecGetArray(fda, user->Bcs.Ubcs, &ucont);
+  DMDAVecGetArray(fda, user->Bcs.Ubcs, &ucont);
 
   VecSet(user->Phi, 0.);
   VecSet(user->DUold, 0.);
@@ -55,7 +55,7 @@ PetscErrorCode FormInitialize(UserCtx *user)
       }
     }
     }*/
-  DAVecRestoreArray(fda, user->Bcs.Ubcs, &ucont);
+  DMDAVecRestoreArray(fda, user->Bcs.Ubcs, &ucont);
   user->ren = 3000.;
 /*   user->dt = 0.01; */
 /*   user->st = 1.; */
@@ -64,12 +64,12 @@ PetscErrorCode FormInitialize(UserCtx *user)
   user->cfl=0.01;
   user->vnn=0.01;
 
-  PetscOptionsGetReal(PETSC_NULL, "-ren", &user->ren, PETSC_NULL);
-  PetscOptionsGetReal(PETSC_NULL, "-dt", &user->dt, PETSC_NULL);
+  PetscOptionsGetReal(NULL, NULL, "-ren", &user->ren, NULL);
+  PetscOptionsGetReal(NULL, NULL, "-dt", &user->dt, NULL);
   dt_inflow = user->dt;
-  PetscOptionsGetReal(PETSC_NULL, "-dt_inflow", &dt_inflow, PETSC_NULL);	
-  PetscOptionsGetReal(PETSC_NULL, "-cfl", &user->cfl, PETSC_NULL);
-  PetscOptionsGetReal(PETSC_NULL, "-vnn", &user->vnn, PETSC_NULL);
+  PetscOptionsGetReal(NULL, NULL, "-dt_inflow", &dt_inflow, NULL);	
+  PetscOptionsGetReal(NULL, NULL, "-cfl", &user->cfl, NULL);
+  PetscOptionsGetReal(NULL, NULL, "-vnn", &user->vnn, NULL);
 
   user->st = 1.;//0.038406145;
   
@@ -131,55 +131,54 @@ PetscErrorCode MGDACreate(UserMG *usermg, PetscInt bi)
 	int total_rank;
 	MPI_Comm_size(PETSC_COMM_WORLD, &total_rank);
 	PetscInt m, n, p, s;
-	DAPeriodicType wrap;
-  
+	DMBoundaryType bx, by, bz;
+
 	m = n = p = PETSC_DECIDE;
-  
+
 	extern int i_proc, j_proc, k_proc;
 	m=i_proc, n=j_proc, p=k_proc;
-	
+
 	if(i_periodic) m=1;
 	if(j_periodic) n=1;
 	if(k_periodic) p=1;
-  	
+
 	if(ii_periodic || jj_periodic || kk_periodic || levelset) s=3;
 	else s=3;
-  
-	if(ii_periodic && jj_periodic && kk_periodic) wrap = DA_XYZPERIODIC;
-	else if(ii_periodic && jj_periodic) wrap = DA_XYPERIODIC;
-	else if(jj_periodic && kk_periodic) wrap = DA_YZPERIODIC;
-	else if(ii_periodic && kk_periodic) wrap = DA_XZPERIODIC;
-	else if(ii_periodic) wrap = DA_XPERIODIC;
-	else if(jj_periodic) wrap = DA_YPERIODIC;
-	else if(kk_periodic) wrap = DA_ZPERIODIC;
-	else wrap = DA_NONPERIODIC;
-	
-	DACreate3d(PETSC_COMM_WORLD, wrap, DA_STENCIL_BOX,
+
+	// Set boundary types for each direction (PETSc 3.20+ API)
+	bx = ii_periodic ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE;
+	by = jj_periodic ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE;
+	bz = kk_periodic ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE;
+
+	DMDACreate3d(PETSC_COMM_WORLD, bx, by, bz, DMDA_STENCIL_BOX,
 	       user[bi].IM+1, user[bi].JM+1, user[bi].KM+1, m, n,
-	       p, 1, s, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+	       p, 1, s, NULL, NULL, NULL,
 	       &(user[bi].da));
-	
-	if(rans)
-	DACreate3d(PETSC_COMM_WORLD, wrap, DA_STENCIL_BOX,
+	DMSetUp(user[bi].da);
+
+	if(rans) {
+	DMDACreate3d(PETSC_COMM_WORLD, bx, by, bz, DMDA_STENCIL_BOX,
 	       user[bi].IM+1, user[bi].JM+1, user[bi].KM+1, m, n,
-	       p, 2, s, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+	       p, 2, s, NULL, NULL, NULL,
 	       &(user[bi].fda2));
+	DMSetUp(user[bi].fda2);
+	}
 	       
 	bi=0;
-	DAGetInfo(user[bi].da, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-		PETSC_NULL, &m, &n, &p, PETSC_NULL, PETSC_NULL,
-		PETSC_NULL, PETSC_NULL);
-	PetscPrintf(PETSC_COMM_WORLD, "**DA Distribution: %i %i %i\n", m, n, p); //seokkoo
+	DMDAGetInfo(user[bi].da, NULL, NULL, NULL,
+		NULL, &m, &n, &p, NULL, NULL,
+		NULL, NULL, NULL, NULL);
+	PetscPrintf(PETSC_COMM_WORLD, "**DM Distribution: %i %i %i\n", m, n, p); //seokkoo
   /*
-    DACreate3d(PETSC_COMM_WORLD, DA_NONPERIODIC, DA_STENCIL_BOX,
+    DMDACreate3d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 	       user[bi].IM+1, user[bi].JM+1, user[bi].KM+1, PETSC_DECIDE, PETSC_DECIDE,
-	       PETSC_DECIDE, 1, 2, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-	       &(user[bi].da));    
+	       PETSC_DECIDE, 1, 2, NULL, NULL, NULL,
+	       &(user[bi].da));
   */
     user[bi].aotopetsc = PETSC_FALSE;
-    DASetUniformCoordinates(user[bi].da, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-    DAGetCoordinateDA(user[bi].da, &(user[bi].fda));
-    DAGetLocalInfo(user[bi].da, &(user[bi].info));
+    DMDASetUniformCoordinates(user[bi].da, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+    DMGetCoordinateDM(user[bi].da, &(user[bi].fda));
+    DMDAGetLocalInfo(user[bi].da, &(user[bi].info));
     
 
     // }
@@ -188,19 +187,20 @@ PetscErrorCode MGDACreate(UserMG *usermg, PetscInt bi)
     user = mgctx[l].user;
     //for (bi=0; bi<block_number; bi++) {
       PetscInt m, n, p;
-      DAGetInfo(mgctx[0].user[bi].da, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-		PETSC_NULL, &m, &n, &p, PETSC_NULL, PETSC_NULL,
-		PETSC_NULL, PETSC_NULL);
-      PetscPrintf(PETSC_COMM_WORLD, "DA Distribution: %i %i %i\n", m, n, p);
+      DMDAGetInfo(mgctx[0].user[bi].da, NULL, NULL, NULL,
+		NULL, &m, &n, &p, NULL, NULL,
+		NULL, NULL, NULL, NULL);
+      PetscPrintf(PETSC_COMM_WORLD, "DM Distribution: %i %i %i\n", m, n, p);
 	
-      DACreate3d(PETSC_COMM_WORLD, wrap, DA_STENCIL_BOX,
+      DMDACreate3d(PETSC_COMM_WORLD, bx, by, bz, DMDA_STENCIL_BOX,
 		 user[bi].IM+1, user[bi].JM+1, user[bi].KM+1,
-		 m, n, p, 1, s, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+		 m, n, p, 1, s, NULL, NULL, NULL,
 		 &(user[bi].da));
+      DMSetUp(user[bi].da);
       user[bi].aotopetsc = PETSC_FALSE;
-      DASetUniformCoordinates(user[bi].da, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-      DAGetCoordinateDA(user[bi].da, &(user[bi].fda));
-      DAGetLocalInfo(user[bi].da, &(user[bi].info));
+      DMDASetUniformCoordinates(user[bi].da, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+      DMGetCoordinateDM(user[bi].da, &(user[bi].fda));
+      DMDAGetLocalInfo(user[bi].da, &(user[bi].info));
 
       //}
   }
@@ -230,12 +230,12 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 
 	PetscReal cl = 1.;
 
-	PetscOptionsGetReal(PETSC_NULL, "-chact_leng", &cl, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-chact_leng", &cl, NULL);
 
   /* How many MG levels, the default is 3 */
 	
 	usermg->mglevels = 1;	// seokkoo
-	PetscOptionsGetInt(PETSC_NULL, "-mg_level", &usermg->mglevels, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-mg_level", &usermg->mglevels, NULL);
   
 	if(poisson!=-1) usermg->mglevels = 1;	// seokkoo
 	
@@ -243,9 +243,9 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 	usermg->jsc = PETSC_FALSE;
 	usermg->isc = PETSC_FALSE;
 
-	PetscOptionsGetTruth(PETSC_NULL, "-mg_k_semi", &usermg->ksc, PETSC_NULL);
-	PetscOptionsGetTruth(PETSC_NULL, "-mg_j_semi", &usermg->jsc, PETSC_NULL);
-	PetscOptionsGetTruth(PETSC_NULL, "-mg_i_semi", &usermg->isc, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-mg_k_semi", &usermg->ksc, NULL);
+	PetscOptionsGetBool(NULL, NULL, "-mg_j_semi", &usermg->jsc, NULL);
+	PetscOptionsGetBool(NULL, NULL, "-mg_i_semi", &usermg->isc, NULL);
 	PetscMalloc(usermg->mglevels*sizeof(MGCtx), &(usermg->mgctx));
 	mgctx = usermg->mgctx;
   
@@ -325,13 +325,13 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 		PetscPrintf(PETSC_COMM_WORLD, "Created DA\n");
 
 
-		DALocalInfo	info = user[bi].info;
+		DMDALocalInfo	info = user[bi].info;
 		PetscInt	xs = info.xs, xe = info.xs + info.xm;
 		PetscInt  	ys = info.ys, ye = info.ys + info.ym;
 		PetscInt	zs = info.zs, ze = info.zs + info.zm;
 
-		DAGetGhostedCoordinates(user[bi].da, &Coor);
-		DAVecGetArray(user[bi].fda, Coor, &coor);
+		DMGetCoordinatesLocal(user[bi].da, &Coor);
+		DMDAVecGetArray(user[bi].fda, Coor, &coor);
 		
 		double buffer;
 		
@@ -386,11 +386,11 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 			}
 		*/
     
-		DAVecRestoreArray(user[bi].fda, Coor, &coor);
-		DAGetCoordinates(user[bi].da, &gCoor);
-		DALocalToGlobal(user[bi].fda, Coor, INSERT_VALUES, gCoor);
-		DAGlobalToLocalBegin(user[bi].fda, gCoor, INSERT_VALUES, Coor);
-		DAGlobalToLocalEnd(user[bi].fda, gCoor, INSERT_VALUES, Coor);
+		DMDAVecRestoreArray(user[bi].fda, Coor, &coor);
+		DMGetCoordinates(user[bi].da, &gCoor);
+		DMLocalToGlobal(user[bi].fda, Coor, INSERT_VALUES, gCoor);
+		DMGlobalToLocalBegin(user[bi].fda, gCoor, INSERT_VALUES, Coor);
+		DMGlobalToLocalEnd(user[bi].fda, gCoor, INSERT_VALUES, Coor);
 	}
 	
 	
@@ -410,17 +410,17 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 		    user_high = mgctx[level+1].user;
 		    for (bi = 0; bi<block_number; bi++) {
 		      PetscPrintf(PETSC_COMM_WORLD, "aaaa %i\n", level);
-		      DALocalInfo	info = user[bi].info;
+		      DMDALocalInfo	info = user[bi].info;
 		      PetscInt	xs = info.xs, xe = info.xs + info.xm;
 		      PetscInt  ys = info.ys, ye = info.ys + info.ym;
 		      PetscInt	zs = info.zs, ze = info.zs + info.zm;
 		      PetscInt	mx = info.mx, my = info.my, mz = info.mz;
 
-		      DAGetGhostedCoordinates(user_high[bi].da, &Coor_high);
-		      DAGetCoordinates(user[bi].da, &Coor);
+		      DMGetCoordinatesLocal(user_high[bi].da, &Coor_high);
+		      DMGetCoordinates(user[bi].da, &Coor);
 
-		      DAVecGetArray(user_high[bi].fda, Coor_high, &coor_high);
-		      DAVecGetArray(user[bi].fda, Coor, &coor);
+		      DMDAVecGetArray(user_high[bi].fda, Coor_high, &coor_high);
+		      DMDAVecGetArray(user[bi].fda, Coor, &coor);
 
 		      if (xe==mx) xe--;
 		      if (ye==my) ye--;
@@ -440,14 +440,14 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 			}
 		      }
 		      
-		      DAVecRestoreArray(user[bi].fda, Coor, &coor);
-		      DAVecRestoreArray(user_high[bi].fda, Coor_high, &coor_high);
+		      DMDAVecRestoreArray(user[bi].fda, Coor, &coor);
+		      DMDAVecRestoreArray(user_high[bi].fda, Coor_high, &coor_high);
 
 
-		      DAGetGhostedCoordinates(user[bi].da, &gCoor);
+		      DMGetCoordinatesLocal(user[bi].da, &gCoor);
 
-		      DAGlobalToLocalBegin(user[bi].fda, Coor, INSERT_VALUES, gCoor);
-		      DAGlobalToLocalEnd(user[bi].fda, Coor, INSERT_VALUES, gCoor);
+		      DMGlobalToLocalBegin(user[bi].fda, Coor, INSERT_VALUES, gCoor);
+		      DMGlobalToLocalEnd(user[bi].fda, Coor, INSERT_VALUES, gCoor);
 
 
 		    }
@@ -588,7 +588,7 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 			}
 			//  PetscPrintf(PETSC_COMM_WORLD, "Number %d", ibm.n_elmt);
 			//  PetscBarrier((PetscObject)user.da);
-			ierr = DACreateGlobalVector(user[bi].fda, &(user[bi].Csi));
+			ierr = DMCreateGlobalVector(user[bi].fda, &(user[bi].Csi));
 			ierr = VecDuplicate(user[bi].Csi, &(user[bi].Eta));
 			ierr = VecDuplicate(user[bi].Csi, &(user[bi].Zet));
 
@@ -655,7 +655,7 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 				VecDuplicate(user[bi].Csi, &(user[bi].Ucont_MG));
 			}
 
-			ierr = DACreateGlobalVector(user[bi].da, &(user[bi].Aj)); CHKERRQ(ierr);
+			ierr = DMCreateGlobalVector(user[bi].da, &(user[bi].Aj)); CHKERRQ(ierr);
 			VecDuplicate(user[bi].Aj, &(user[bi].P));
 			VecDuplicate(user[bi].Aj, &(user[bi].Phi));
 			VecDuplicate(user[bi].Aj, &(user[bi].IAj));
@@ -671,7 +671,7 @@ PetscErrorCode MG_Initial(UserMG *usermg, IBMNodes *ibm)
 			//VecDuplicate(user[bi].Aj, &(user[bi].Volume));
 if (rotor_model && temperature_rotormodel && temperature) VecDuplicate(user[bi].Aj, &(user[bi].Ftmprt_eul)); // added by xyang 12-7-2010
 			
-			DACreateLocalVector(user[bi].fda, &(user[bi].lCsi));
+			DMCreateLocalVector(user[bi].fda, &(user[bi].lCsi));
 
 			VecDuplicate(user[bi].lCsi, &(user[bi].lEta));
 			VecDuplicate(user[bi].lCsi, &(user[bi].lZet));
@@ -735,7 +735,7 @@ if (rotor_model && temperature_rotormodel && temperature) VecDuplicate(user[bi].
 			VecDuplicate(user[bi].lCsi, &(user[bi].lUcont_rm1));
 			//VecDuplicate(user[bi].lCsi, &(user[bi].lArea));
 
-			DACreateLocalVector(user[bi].da, &(user[bi].lAj));
+			DMCreateLocalVector(user[bi].da, &(user[bi].lAj));
       
 			VecDuplicate(user[bi].lAj, &(user[bi].lIAj));
 			VecDuplicate(user[bi].lAj, &(user[bi].lJAj));
@@ -758,11 +758,11 @@ if (IB_wm) VecDuplicate(user[bi].lAj, &(user[bi].lAlfa_wm));
 			}	
 //end (Toni)
 			if(rans) {
-				DACreateLocalVector(user[bi].fda2, &user[bi].lK_Omega);	VecSet(user[bi].lK_Omega, 0);	// seokkoo
-				DACreateLocalVector(user[bi].fda2, &user[bi].lK_Omega_o);	VecSet(user[bi].lK_Omega_o, 0);	// seokkoo
+				DMCreateLocalVector(user[bi].fda2, &user[bi].lK_Omega);	VecSet(user[bi].lK_Omega, 0);	// seokkoo
+				DMCreateLocalVector(user[bi].fda2, &user[bi].lK_Omega_o);	VecSet(user[bi].lK_Omega_o, 0);	// seokkoo
 				VecDuplicate(user[bi].P, &user[bi].Distance);
 	
-				DACreateGlobalVector(user[bi].fda2, &user[bi].K_Omega);	VecSet(user[bi].K_Omega, 0);	// seokkoo
+				DMCreateGlobalVector(user[bi].fda2, &user[bi].K_Omega);	VecSet(user[bi].K_Omega, 0);	// seokkoo
 				VecDuplicate(user[bi].K_Omega, &(user[bi].K_Omega_o));	VecSet(user[bi].K_Omega_o, 0);// seokkoo
 				//VecDuplicate(user[bi].K_Omega, &(user[bi].K_Omega_rm1));
 				//VecDuplicate(user[bi].lP, &(user[bi].lSrans));		VecSet(user[bi].lSrans, 0);// seokkoo
@@ -830,34 +830,34 @@ PetscErrorCode MG_Finalize(UserMG *usermg)
     for (bi=0; bi<block_number; bi++) {
 	extern int averaging;// seokkoo
 	if(level==usermg->mglevels-1 && averaging) {
-		VecDestroy(user[bi].Ucat_square_sum);
-		VecDestroy(user[bi].Ucat_cross_sum);
-		VecDestroy(user[bi].Ucat_sum);
+		VecDestroy(&user[bi].Ucat_square_sum);
+		VecDestroy(&user[bi].Ucat_cross_sum);
+		VecDestroy(&user[bi].Ucat_sum);
 	}
-      VecDestroy(user[bi].Cent);
-      VecDestroy(user[bi].Ucont);
-      VecDestroy(user[bi].Ucont_o);
-      VecDestroy(user[bi].Ucont_rm1);
-      //VecDestroy(user[bi].Ucont_rm2);	// seokkoo
-      VecDestroy(user[bi].Ucat);
-      VecDestroy(user[bi].Ucat_o);
-      VecDestroy(user[bi].DUold);
-      VecDestroy(user[bi].Bcs.Ubcs);
-      VecDestroy(user[bi].GridSpace);
-      VecDestroy(user[bi].Itfc);
-      //      VecDestroy(user[bi].Rhs);
-      if(implicit!=4) VecDestroy(user[bi].psuedot);
-      //VecDestroy(user[bi].Area);
-      //VecDestroy(user[bi].Volume);
+      VecDestroy(&user[bi].Cent);
+      VecDestroy(&user[bi].Ucont);
+      VecDestroy(&user[bi].Ucont_o);
+      VecDestroy(&user[bi].Ucont_rm1);
+      //VecDestroy(&user[bi].Ucont_rm2);	// seokkoo
+      VecDestroy(&user[bi].Ucat);
+      VecDestroy(&user[bi].Ucat_o);
+      VecDestroy(&user[bi].DUold);
+      VecDestroy(&user[bi].Bcs.Ubcs);
+      VecDestroy(&user[bi].GridSpace);
+      VecDestroy(&user[bi].Itfc);
+      //      VecDestroy(&user[bi].Rhs);
+      if(implicit!=4) VecDestroy(&user[bi].psuedot);
+      //VecDestroy(&user[bi].Area);
+      //VecDestroy(&user[bi].Volume);
 
 	// add begin (xiaolei)
-	      if (nacelle_model ||  rotor_model || IB_delta) VecDestroy(user[bi].F_eul); // xyang 12-7-2010
+	      if (nacelle_model ||  rotor_model || IB_delta) VecDestroy(&user[bi].F_eul); // xyang 12-7-2010
       	if (Force_wm && (imin_wm != 0 || imax_wm != 0 || jmin_wm != 0 || jmax_wm != 0 || (IB_wm != 0 && immersed))) {
-		VecDestroy(user[bi].Force_wm); // xyang 12-7-2010
+		VecDestroy(&user[bi].Force_wm); // xyang 12-7-2010
       	}
 
 	if (Force_wm && (temperature && (imin_wmtmprt !=0 || imax_wmtmprt !=0 || jmin_wmtmprt != 0 || jmax_wmtmprt !=0 || (IB_wmtmprt != 0 && immersed)))) {
-		VecDestroy(user[bi].Force_wmtmprt); // added by xyang 10-22-2012
+		VecDestroy(&user[bi].Force_wmtmprt); // added by xyang 10-22-2012
 	}
 
 
@@ -867,65 +867,65 @@ PetscErrorCode MG_Finalize(UserMG *usermg)
 	      //VecDestroy(&user[bi].Visc3_tmprt);
 	}
 
-      	if (temperature) VecDestroy(user[bi].FTmprt); // added by xyang 
+      	if (temperature) VecDestroy(&user[bi].FTmprt); // added by xyang 
 
 	// add end (xiaolei)			
 			
 			
 			
       if (level < usermg->mglevels-1) {
-	VecDestroy(user[bi].Forcing);
-	VecDestroy(user[bi].Ucont_MG);
+	VecDestroy(&user[bi].Forcing);
+	VecDestroy(&user[bi].Ucont_MG);
       }
 
-      VecDestroy(user[bi].Nvert);
-      VecDestroy(user[bi].Nvert_o);
+      VecDestroy(&user[bi].Nvert);
+      VecDestroy(&user[bi].Nvert_o);
      
-      VecDestroy(user[bi].P);
-      VecDestroy(user[bi].Phi);
-      VecDestroy(user[bi].P_o);
+      VecDestroy(&user[bi].P);
+      VecDestroy(&user[bi].Phi);
+      VecDestroy(&user[bi].P_o);
 
-      VecDestroy(user[bi].lCsi);
-      VecDestroy(user[bi].lEta);
-      VecDestroy(user[bi].lZet);
-      VecDestroy(user[bi].lICsi);
-      VecDestroy(user[bi].lIEta);
-      VecDestroy(user[bi].lIZet);
-      VecDestroy(user[bi].lJCsi);
-      VecDestroy(user[bi].lJEta);
-      VecDestroy(user[bi].lJZet);
-      VecDestroy(user[bi].lKCsi);
-      VecDestroy(user[bi].lKEta);
-      VecDestroy(user[bi].lKZet);
-      VecDestroy(user[bi].lGridSpace);
-      VecDestroy(user[bi].lUcont);
-      VecDestroy(user[bi].lUcat);
-      VecDestroy(user[bi].ItfcP);
-      VecDestroy(user[bi].lCent);
+      VecDestroy(&user[bi].lCsi);
+      VecDestroy(&user[bi].lEta);
+      VecDestroy(&user[bi].lZet);
+      VecDestroy(&user[bi].lICsi);
+      VecDestroy(&user[bi].lIEta);
+      VecDestroy(&user[bi].lIZet);
+      VecDestroy(&user[bi].lJCsi);
+      VecDestroy(&user[bi].lJEta);
+      VecDestroy(&user[bi].lJZet);
+      VecDestroy(&user[bi].lKCsi);
+      VecDestroy(&user[bi].lKEta);
+      VecDestroy(&user[bi].lKZet);
+      VecDestroy(&user[bi].lGridSpace);
+      VecDestroy(&user[bi].lUcont);
+      VecDestroy(&user[bi].lUcat);
+      VecDestroy(&user[bi].ItfcP);
+      VecDestroy(&user[bi].lCent);
 
 	// add begin (xiaolei)
-      	if (rotor_model || IB_delta) VecDestroy(user[bi].lF_eul); // xyang 12-7-2010
+      	if (rotor_model || IB_delta) VecDestroy(&user[bi].lF_eul); // xyang 12-7-2010
       	if (Force_wm && (imin_wm != 0 || imax_wm != 0 || jmin_wm != 0 || jmax_wm !=0 || (IB_wm && immersed))) {
 
-		VecDestroy(user[bi].lForce_wm); // xyang 12-7-2010
+		VecDestroy(&user[bi].lForce_wm); // xyang 12-7-2010
 
 	}
         if ((imin_wm != 0 || imax_wm != 0 || jmin_wm != 0 || jmax_wm != 0 || (IB_wm && immersed)) && Shear_wm) {
-                VecDestroy(user[bi].lVisc1_wm);
-                VecDestroy(user[bi].lVisc2_wm);
-                VecDestroy(user[bi].lVisc3_wm);
+                VecDestroy(&user[bi].lVisc1_wm);
+                VecDestroy(&user[bi].lVisc2_wm);
+                VecDestroy(&user[bi].lVisc3_wm);
       	}
 
 
 	if (Force_wm && (imin_wmtmprt !=0 || imax_wmtmprt !=0 || jmin_wmtmprt != 0 || jmax_wmtmprt !=0 || (IB_wmtmprt != 0 && immersed))) {
-		VecDestroy(user[bi].lForce_wmtmprt); // added by xyang 10-22-2012
+		VecDestroy(&user[bi].lForce_wmtmprt); // added by xyang 10-22-2012
 	}
 
 
 	if (Shear_wm && (imin_wmtmprt !=0 || imax_wmtmprt !=0 || jmin_wmtmprt != 0 || jmax_wmtmprt !=0 || (IB_wmtmprt != 0 && immersed))) {
-                VecDestroy(user[bi].lVisc1_wmtmprt);
-                VecDestroy(user[bi].lVisc2_wmtmprt);
-                VecDestroy(user[bi].lVisc3_wmtmprt);
+                VecDestroy(&user[bi].lVisc1_wmtmprt);
+                VecDestroy(&user[bi].lVisc2_wmtmprt);
+                VecDestroy(&user[bi].lVisc3_wmtmprt);
 	}
 
 
@@ -935,37 +935,37 @@ PetscErrorCode MG_Finalize(UserMG *usermg)
       	//VecDestroy(&user[bi].lVisc3);
 
 	if (temperature) {
-      		VecDestroy(user[bi].lVisc1_tmprt);
-      		VecDestroy(user[bi].lVisc2_tmprt);
-      		VecDestroy(user[bi].lVisc3_tmprt);
+      		VecDestroy(&user[bi].lVisc1_tmprt);
+      		VecDestroy(&user[bi].lVisc2_tmprt);
+      		VecDestroy(&user[bi].lVisc3_tmprt);
 	}
 	// add end (xiaolei)			
 			
-      VecDestroy(user[bi].lUcont_o);
-      VecDestroy(user[bi].lUcont_rm1);
-//      VecDestroy(user[bi].lArea);
-//      VecDestroy(user[bi].lVolume);
+      VecDestroy(&user[bi].lUcont_o);
+      VecDestroy(&user[bi].lUcont_rm1);
+//      VecDestroy(&user[bi].lArea);
+//      VecDestroy(&user[bi].lVolume);
 
-      VecDestroy(user[bi].lAj);
-      VecDestroy(user[bi].lIAj);
-      VecDestroy(user[bi].lJAj);
-      VecDestroy(user[bi].lKAj);
-      VecDestroy(user[bi].lP);
-      VecDestroy(user[bi].lPhi);
-      VecDestroy(user[bi].lNvert);
-      VecDestroy(user[bi].lNvert_o);
-      VecDestroy(user[bi].lItfc);
-      VecDestroy(user[bi].lItfcP);
+      VecDestroy(&user[bi].lAj);
+      VecDestroy(&user[bi].lIAj);
+      VecDestroy(&user[bi].lJAj);
+      VecDestroy(&user[bi].lKAj);
+      VecDestroy(&user[bi].lP);
+      VecDestroy(&user[bi].lPhi);
+      VecDestroy(&user[bi].lNvert);
+      VecDestroy(&user[bi].lNvert_o);
+      VecDestroy(&user[bi].lItfc);
+      VecDestroy(&user[bi].lItfcP);
 
 //add (Toni)
 	//for wave_momentum_source
 			if (wave_momentum_source){
-				VecDestroy(user[bi].WAVE_fp);
-				VecDestroy(user[bi].lWAVE_fp);		
+				VecDestroy(&user[bi].WAVE_fp);
+				VecDestroy(&user[bi].lWAVE_fp);		
 			}	
 //end (Toni)
-      DADestroy(user[bi].da);
-/*       DADestroy(user[bi].fda); */
+      DMDestroy(&user[bi].da);
+/*       DMDestroy(user[bi].fda); */
     }
     PetscFree(user);
   }

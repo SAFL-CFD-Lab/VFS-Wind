@@ -29,7 +29,7 @@ void Initialize_wave(UserCtx *user)
 			char filen2[256];
 			char path_wave[256];
 			sprintf(path_wave, "./");
-			PetscOptionsGetString(PETSC_NULL,"-path_wave", path_wave, 256, PETSC_NULL);		
+			PetscOptionsGetString(NULL, NULL, "-path_wave", path_wave, 256, NULL);		
 			sprintf(filen2, "%s/WAVE_info%06d.dat", path_wave, 0);
 			fd = fopen(filen2, "r");
 			if(!fd) {
@@ -83,7 +83,7 @@ void Initialize_wind(UserCtx *user)
 		char filen[256];
 		char path_wind[256];
 		sprintf(path_wind, "./");
-		PetscOptionsGetString(PETSC_NULL,"-path_wind", path_wind, 256, PETSC_NULL);		
+		PetscOptionsGetString(NULL, NULL, "-path_wind", path_wind, 256, NULL);		
 		sprintf(filen, "%s/WAVE_wind%06d.dat", path_wind, 0);
 		fd = fopen(filen, "r");
 		if(!fd) {
@@ -115,8 +115,8 @@ void Initialize_wind(UserCtx *user)
 	PetscMalloc(size_wind*sizeof(double), &user[0].wave_inf[0].WIND_Z );
 	user[0].wave_inf[0].WIND_ti=wind_start_read;
 	
-	DA da = user->da, fda = user->fda;
-	DALocalInfo	info = user->info;	
+	DM da = user->da, fda = user->fda;
+	DMDALocalInfo	info = user->info;	
 
 	user[0].wave_inf[0].WIND_id_x =(int**) malloc ( info.xm * sizeof(int*));
 	user[0].wave_inf[0].WIND_id_y =(int**) malloc ( info.xm * sizeof(int*));	
@@ -203,7 +203,7 @@ The main control option is defined by "wave_momentum_source" which can adopt one
 			char filen[256];
 			char path_wave[256];
 			sprintf(path_wave, "./");
-			PetscOptionsGetString(PETSC_NULL,"-path_wave", path_wave, 256, PETSC_NULL);		
+			PetscOptionsGetString(NULL, NULL, "-path_wave", path_wave, 256, NULL);		
 			sprintf(filen, "%s/WAVE_info%06d.dat", path_wave, WAVE_ti);
 			fd = fopen(filen, "r");
 			if(!fd) {
@@ -468,8 +468,8 @@ void WIND_DATA_input(UserCtx *user)
 	
 	//locate near field coordinates in the far field grid
 	Cmpnts ***cent;	
-	DA da = user->da, fda = user->fda;
-	DALocalInfo	info = user->info;
+	DM da = user->da, fda = user->fda;
+	DMDALocalInfo	info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt  ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -488,7 +488,7 @@ void WIND_DATA_input(UserCtx *user)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;	
 	
-	DAVecGetArray(fda, user->lCent, &cent);		
+	DMDAVecGetArray(fda, user->lCent, &cent);		
 
 	if(air_flow_levelset==2){
 	
@@ -497,7 +497,7 @@ void WIND_DATA_input(UserCtx *user)
 			char filen[256];
 			char path_wind[256];
 			sprintf(path_wind, "./");
-			PetscOptionsGetString(PETSC_NULL,"-path_wind", path_wind, 256, PETSC_NULL);		
+			PetscOptionsGetString(NULL, NULL, "-path_wind", path_wind, 256, NULL);		
 			sprintf(filen, "%s/WAVE_wind%06d.dat", path_wind, WIND_ti);
 			fd = fopen(filen, "r");
 			if(!fd) {
@@ -606,13 +606,13 @@ void WIND_DATA_input(UserCtx *user)
 
 	
 	
-	DAVecRestoreArray(fda, user->lCent, &cent);
+	DMDAVecRestoreArray(fda, user->lCent, &cent);
 }
 
 void WAVE_Formfuction2(UserCtx *user)
 {
 	PetscReal ts,te,cput;
-	PetscGetTime(&ts);
+	PetscTime(&ts);
 	int ti_wave;
 	double time=user->dt*ti;	
 	int WAVE_num_max;
@@ -625,7 +625,7 @@ void WAVE_Formfuction2(UserCtx *user)
 	int WAVE_ti=user[0].wave_inf[0].WAVE_ti;
 	if(!rank)printf("Forming RHS for WAVE sourve\n");	
 
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -636,9 +636,9 @@ void WAVE_Formfuction2(UserCtx *user)
 	Cmpnts	***csi, ***eta, ***zet;
 	Cmpnts ***WAVE_fp;
 
-	DA		da = user->da, fda = user->fda;	
+	DM		da = user->da, fda = user->fda;	
 	
-	DAGetLocalInfo(user->da, &info);
+	DMDAGetLocalInfo(user->da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -657,14 +657,14 @@ void WAVE_Formfuction2(UserCtx *user)
 	if (ze==mz) lze = ze-1;
 	
 	//VecSet(user->WAVE_fp, 0);
-	DAVecGetArray(user->fda, user->lCent, &cent);
-	DAVecGetArray(user->da, user->lLevelset, &level);
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
-	DAVecGetArray(da, user->lAj, &aj);
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(fda, user->WAVE_fp, &WAVE_fp);
+	DMDAVecGetArray(user->fda, user->lCent, &cent);
+	DMDAVecGetArray(user->da, user->lLevelset, &level);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(da, user->lAj, &aj);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(fda, user->WAVE_fp, &WAVE_fp);
 	int numprint=user[0].wave_inf[0].WAVE_ind_max;
 	if (numprint>=40)numprint=40;
 	
@@ -738,19 +738,19 @@ void WAVE_Formfuction2(UserCtx *user)
 		}
 	}	
 	
-	DAVecRestoreArray(fda, user->WAVE_fp, &WAVE_fp);
-	DAGlobalToLocalBegin(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
-	DAGlobalToLocalEnd(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
+	DMDAVecRestoreArray(fda, user->WAVE_fp, &WAVE_fp);
+	DMGlobalToLocalBegin(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
+	DMGlobalToLocalEnd(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
 	
-	DAVecRestoreArray(user->fda, user->lCent, &cent);
-	DAVecRestoreArray(user->da, user->lLevelset, &level);
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);	
-	DAVecRestoreArray(da, user->lAj, &aj);
-	DAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(user->fda, user->lCent, &cent);
+	DMDAVecRestoreArray(user->da, user->lLevelset, &level);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);	
+	DMDAVecRestoreArray(da, user->lAj, &aj);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
-	PetscGetTime(&te);
+	PetscTime(&te);
 	cput=te-ts;
 	double cput2;
 	PetscGlobalMax(&cput,&cput2,PETSC_COMM_WORLD);
@@ -778,7 +778,7 @@ void WAVE_SL_Formfuction2(UserCtx *user)
 	*/
 	
 	PetscReal ts,te,cput;
-	PetscGetTime(&ts);
+	PetscTime(&ts);
 	int ti_wave;
 	double time;
 	int WAVE_num_max;
@@ -796,7 +796,7 @@ void WAVE_SL_Formfuction2(UserCtx *user)
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	if(!rank)printf("Forming RHS for WAVE Sponge Layer\n");	
 
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -809,8 +809,8 @@ void WAVE_SL_Formfuction2(UserCtx *user)
 	Cmpnts ***WAVE_fp;
 	PetscReal ***rho;
 
-	DA		da = user->da, fda = user->fda;	
-	DAGetLocalInfo(user->da, &info);
+	DM		da = user->da, fda = user->fda;	
+	DMDAGetLocalInfo(user->da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -828,16 +828,16 @@ void WAVE_SL_Formfuction2(UserCtx *user)
 	if (ye==my) lye = ye-1;
 	if (ze==mz) lze = ze-1;
 
-	DAVecGetArray(user->fda, user->lCent, &cent);
-	DAVecGetArray(user->da, user->lLevelset, &level);
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
-	DAVecGetArray(da, user->lAj, &aj);
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(fda, user->WAVE_fp, &WAVE_fp);
-	DAVecGetArray(da, user->lDensity, &rho);
-	DAVecGetArray(fda, user->Ucat,  &ucat);
+	DMDAVecGetArray(user->fda, user->lCent, &cent);
+	DMDAVecGetArray(user->da, user->lLevelset, &level);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(da, user->lAj, &aj);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(fda, user->WAVE_fp, &WAVE_fp);
+	DMDAVecGetArray(da, user->lDensity, &rho);
+	DMDAVecGetArray(fda, user->Ucat,  &ucat);
 
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
@@ -902,19 +902,19 @@ void WAVE_SL_Formfuction2(UserCtx *user)
 			}										
 		}																	
 	}
-	DAVecRestoreArray(fda, user->WAVE_fp, &WAVE_fp);
-	DAGlobalToLocalBegin(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
-	DAGlobalToLocalEnd(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
-	DAVecRestoreArray(user->fda, user->lCent, &cent);
-	DAVecRestoreArray(user->da, user->lLevelset, &level);
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);	
-	DAVecRestoreArray(da, user->lAj, &aj);
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(da, user->lDensity, &rho);
-	DAVecRestoreArray(fda, user->Ucat,  &ucat);
-	PetscGetTime(&te);
+	DMDAVecRestoreArray(fda, user->WAVE_fp, &WAVE_fp);
+	DMGlobalToLocalBegin(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
+	DMGlobalToLocalEnd(user->fda, user->WAVE_fp, INSERT_VALUES, user->lWAVE_fp);
+	DMDAVecRestoreArray(user->fda, user->lCent, &cent);
+	DMDAVecRestoreArray(user->da, user->lLevelset, &level);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);	
+	DMDAVecRestoreArray(da, user->lAj, &aj);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lDensity, &rho);
+	DMDAVecRestoreArray(fda, user->Ucat,  &ucat);
+	PetscTime(&te);
 	cput=te-ts;
 	double cput2;
 	PetscGlobalMax(&cput,&cput2,PETSC_COMM_WORLD);

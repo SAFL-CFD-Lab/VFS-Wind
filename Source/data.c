@@ -9,7 +9,7 @@
 static char help[] = "Testing programming!";
 
 #include <vector>
-#include "petscda.h"
+#include "petscdmda.h"
 #include "petscts.h"
 #include "petscpc.h"
 #include "petscsnes.h"
@@ -65,7 +65,7 @@ typedef struct {
 } FlowWave;
 
 typedef struct {
-	PassiveScalar u, v, w, p;
+	PetscScalar u, v, w, p;
 } PassiveField;
 
 typedef struct {
@@ -81,7 +81,7 @@ typedef struct {
 } Cmpnts2;
 
 typedef struct {
-	PassiveScalar csi[3], eta[3], zet[3], aj;
+	PetscScalar csi[3], eta[3], zet[3], aj;
 } Metrics;
 
 typedef struct {
@@ -103,11 +103,11 @@ typedef struct {
 
 typedef struct {
 	PetscInt	IM, JM, KM; // dimensions of grid
-	DA da;	/* Data structure for scalars (include the grid geometry
+	DM da;	/* Data structure for scalars (include the grid geometry
 						informaion, to obtain the grid information,
-						use DAGetCoordinates) */
-	DA fda, fda2;	// Data Structure for vectors
-	DALocalInfo info;
+						use DMGetCoordinates) */
+	DM fda, fda2;	// Data Structure for vectors
+	DMDALocalInfo info;
 
 	Vec	Cent;	// Coordinates of cell centers
 	Vec 	Csi, Eta, Zet, Aj;
@@ -191,9 +191,9 @@ PetscErrorCode VtkOutput(UserCtx *user, int only_V)
 		}
 
 		for (bi=0; bi<block_number; bi++) {
-			DA			da   = user[bi].da;
-			DA			fda  = user[bi].fda;
-			DALocalInfo	info = user[bi].info;
+			DM			da   = user[bi].da;
+			DM			fda  = user[bi].fda;
+			DMDALocalInfo	info = user[bi].info;
 
 			// grid count
 			PetscInt	xs = info.xs, xe = info.xs + info.xm;
@@ -206,23 +206,23 @@ PetscErrorCode VtkOutput(UserCtx *user, int only_V)
 			k_begin = 1, k_end = mz-1;
 
 			// use options if specified
-			PetscOptionsGetInt(PETSC_NULL, "-i_begin", &i_begin, PETSC_NULL);
-			PetscOptionsGetInt(PETSC_NULL, "-i_end", &i_end, PETSC_NULL);
-			PetscOptionsGetInt(PETSC_NULL, "-j_begin", &j_begin, PETSC_NULL);
-			PetscOptionsGetInt(PETSC_NULL, "-j_end", &j_end, PETSC_NULL);
-			PetscOptionsGetInt(PETSC_NULL, "-k_begin", &k_begin, PETSC_NULL);
-			PetscOptionsGetInt(PETSC_NULL, "-k_end", &k_end, PETSC_NULL);
+			PetscOptionsGetInt(NULL, NULL, "-i_begin", &i_begin, NULL);
+			PetscOptionsGetInt(NULL, NULL, "-i_end", &i_end, NULL);
+			PetscOptionsGetInt(NULL, NULL, "-j_begin", &j_begin, NULL);
+			PetscOptionsGetInt(NULL, NULL, "-j_end", &j_end, NULL);
+			PetscOptionsGetInt(NULL, NULL, "-k_begin", &k_begin, NULL);
+			PetscOptionsGetInt(NULL, NULL, "-k_end", &k_end, NULL);
 
 			xs = i_begin - 1, xe = i_end+1;
 			ys = j_begin - 1, ye = j_end+1;
 			zs = k_begin - 1, ze = k_end+1;
 
-			DAGetCoordinates(da, &Coor);
-			DAVecGetArray(fda, Coor, &coor);
-			if (only_V != 2) DAVecGetArray(da,  user[bi].Nvert, &nvert);
-			if (!only_V) DAVecGetArray(da,  user[bi].P, &p);
-			if (!vc) DAVecGetArray(fda, user[bi].Ucat_o, &ucat_o);
-			else DAVecGetArray(fda, user[bi].Ucat, &ucat);
+			DMGetCoordinates(da, &Coor);
+			DMDAVecGetArray(fda, Coor, &coor);
+			if (only_V != 2) DMDAVecGetArray(da,  user[bi].Nvert, &nvert);
+			if (!only_V) DMDAVecGetArray(da,  user[bi].P, &p);
+			if (!vc) DMDAVecGetArray(fda, user[bi].Ucat_o, &ucat_o);
+			else DMDAVecGetArray(fda, user[bi].Ucat, &ucat);
 
 			// Check if petsc_real is a double variable. If this is not the case and you want to make the code work
 			// then you need to change the type="Float64" output below to the correct size
@@ -369,13 +369,13 @@ PetscErrorCode VtkOutput(UserCtx *user, int only_V)
 			// rans (k, omega, nut)
 			if (!onlyV && rans) {
 				Cmpnts2 ***komega;
-				DACreateGlobalVector(user[bi].fda2, &K_Omega);
+				DMCreateGlobalVector(user[bi].fda2, &K_Omega);
 				PetscViewer	viewer;
 				sprintf(filen, "kfield%06d_%1d.dat", ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, K_Omega);
-				PetscViewerDestroy(viewer);
-				DAVecGetArray(user[bi].fda2, K_Omega, &komega);
+				VecLoad(K_Omega, viewer);
+				PetscViewerDestroy(&viewer);
+				DMDAVecGetArray(user[bi].fda2, K_Omega, &komega);
 
 				numbytes = sizeof(double)*(xe-2-xs)*(ye-2-ys)*(ze-2-zs);
 				fwrite(&numbytes, sizeof(int), 1, f);
@@ -410,20 +410,20 @@ PetscErrorCode VtkOutput(UserCtx *user, int only_V)
 					}
 				}
 
-				DAVecRestoreArray(user[bi].fda2, K_Omega, &komega);
-				VecDestroy(K_Omega);
+				DMDAVecRestoreArray(user[bi].fda2, K_Omega, &komega);
+				VecDestroy(&K_Omega);
 			}
 
 			// levelset
 			if (levelset) {
 				// get levelset data
-				DACreateGlobalVector(da, &Levelset);
+				DMCreateGlobalVector(da, &Levelset);
 				PetscViewer viewer;
 				sprintf(filen, "lfield%06d_%1d.dat", ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, Levelset);
-				PetscViewerDestroy(viewer);
-				DAVecGetArray(da, Levelset, &level);
+				VecLoad(Levelset, viewer);
+				PetscViewerDestroy(&viewer);
+				DMDAVecGetArray(da, Levelset, &level);
 
 				// write data
 				numbytes = sizeof(double)*(xe-2-xs)*(ye-2-ys)*(ze-2-zs);
@@ -438,8 +438,8 @@ PetscErrorCode VtkOutput(UserCtx *user, int only_V)
 				}
 
 				// cleanup
-				DAVecRestoreArray(da, Levelset, &level);
-				VecDestroy(Levelset);
+				DMDAVecRestoreArray(da, Levelset, &level);
+				VecDestroy(&Levelset);
 			}
 
 			// coordinates
@@ -460,11 +460,11 @@ PetscErrorCode VtkOutput(UserCtx *user, int only_V)
 			// end of data
 			PetscFPrintf(PETSC_COMM_WORLD, f, "  </AppendedData>\n");
 
-			DAVecRestoreArray(fda, Coor, &coor);
-			if (only_V != 2) DAVecRestoreArray(da , user[bi].Nvert, &nvert);
-			if (!only_V) DAVecRestoreArray(da , user[bi].P, &p);
-			if (vc) DAVecRestoreArray(fda, user[bi].Ucat, &ucat);
-			else DAVecRestoreArray(fda, user[bi].Ucat_o, &ucat_o);
+			DMDAVecRestoreArray(fda, Coor, &coor);
+			if (only_V != 2) DMDAVecRestoreArray(da , user[bi].Nvert, &nvert);
+			if (!only_V) DMDAVecRestoreArray(da , user[bi].P, &p);
+			if (vc) DMDAVecRestoreArray(fda, user[bi].Ucat, &ucat);
+			else DMDAVecRestoreArray(fda, user[bi].Ucat_o, &ucat_o);
 
 			// VTK footer
 			PetscFPrintf(PETSC_COMM_WORLD, f, "</VTKFile>\n");
@@ -854,8 +854,8 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 	}
 
 	for (bi=0; bi<block_number; bi++) {
-		DA da = user[bi].da, fda = user[bi].fda;
-		DALocalInfo info = user[bi].info;
+		DM da = user[bi].da, fda = user[bi].fda;
+		DMDALocalInfo info = user[bi].info;
 
 		PetscInt	xs = info.xs, xe = info.xs + info.xm;
 		PetscInt 	ys = info.ys, ye = info.ys + info.ym;
@@ -871,12 +871,12 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 		VecScatter	ctx;
 		Vec K_Omega;
 
-		DAVecGetArray(user[bi].da, user[bi].Nvert, &nvert);
-		/*DAVecGetArray(user[bi].da, user[bi].Aj, &aj);
-		DAVecGetArray(user[bi].fda, user[bi].Csi, &csi);
-		DAVecGetArray(user[bi].fda, user[bi].Eta, &eta);
-		DAVecGetArray(user[bi].fda, user[bi].Zet, &zet);*/
-		DAVecGetArray(user[bi].fda, user[bi].Ucat, &ucat);
+		DMDAVecGetArray(user[bi].da, user[bi].Nvert, &nvert);
+		/*DMDAVecGetArray(user[bi].da, user[bi].Aj, &aj);
+		DMDAVecGetArray(user[bi].fda, user[bi].Csi, &csi);
+		DMDAVecGetArray(user[bi].fda, user[bi].Eta, &eta);
+		DMDAVecGetArray(user[bi].fda, user[bi].Zet, &zet);*/
+		DMDAVecGetArray(user[bi].fda, user[bi].Ucat, &ucat);
 
 		INTEGER4	ZoneType=0, ICellMax=0, JCellMax=0, KCellMax=0;
 		INTEGER4	IsBlock=1, NumFaceConnections=0, FaceNeighborMode=0;
@@ -894,12 +894,12 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 		j_begin = 1, j_end = my-1;
 		k_begin = 1, k_end = mz-1;
 
-		PetscOptionsGetInt(PETSC_NULL, "-i_begin", &i_begin, PETSC_NULL);
-		PetscOptionsGetInt(PETSC_NULL, "-i_end", &i_end, PETSC_NULL);
-		PetscOptionsGetInt(PETSC_NULL, "-j_begin", &j_begin, PETSC_NULL);
-		PetscOptionsGetInt(PETSC_NULL, "-j_end", &j_end, PETSC_NULL);
-		PetscOptionsGetInt(PETSC_NULL, "-k_begin", &k_begin, PETSC_NULL);
-		PetscOptionsGetInt(PETSC_NULL, "-k_end", &k_end, PETSC_NULL);
+		PetscOptionsGetInt(NULL, NULL, "-i_begin", &i_begin, NULL);
+		PetscOptionsGetInt(NULL, NULL, "-i_end", &i_end, NULL);
+		PetscOptionsGetInt(NULL, NULL, "-j_begin", &j_begin, NULL);
+		PetscOptionsGetInt(NULL, NULL, "-j_end", &j_end, NULL);
+		PetscOptionsGetInt(NULL, NULL, "-k_begin", &k_begin, NULL);
+		PetscOptionsGetInt(NULL, NULL, "-k_end", &k_end, NULL);
 
 		xs = i_begin - 1, xe = i_end+1;
 		ys = j_begin - 1, ye = j_end+1;
@@ -945,8 +945,8 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 		//III = (mx-1) * (my-1) * (mz-1);
 		III = IMax*JMax*KMax;
 
-		DAGetCoordinates(da, &Coor);
-		DAVecGetArray(fda, Coor, &coor);
+		DMGetCoordinates(da, &Coor);
+		DMDAVecGetArray(fda, Coor, &coor);
 
 		float *x;
 		x = new float [III];
@@ -972,12 +972,12 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 		}
 		I = TECDAT100(&III, &x[0], &DIsDouble);
 
-		DAVecRestoreArray(fda, Coor, &coor);
+		DMDAVecRestoreArray(fda, Coor, &coor);
 		delete []x;
 
 		if (!vc) {
 			x = new float [(mx-1)*(my-1)*(mz-1)];
-			DAVecGetArray(user[bi].fda, user[bi].Ucat_o, &ucat_o);
+			DMDAVecGetArray(user[bi].fda, user[bi].Ucat_o, &ucat_o);
 			for (k=0; k<mz-1; k++)
 			for (j=0; j<my-1; j++)
 			for (i=0; i<mx-1; i++) {
@@ -1027,7 +1027,7 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 			}
 			I = TECDAT100(&III, &x[0], &DIsDouble);
 
-			DAVecRestoreArray(user[bi].fda, user[bi].Ucat_o, &ucat_o);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_o, &ucat_o);
 			delete []x;
 		}
 		else {
@@ -1075,14 +1075,14 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 		//x.resize (III);
 
 		if (!only_V) {
-			DAVecGetArray(user[bi].da, user[bi].P, &p);
+			DMDAVecGetArray(user[bi].da, user[bi].P, &p);
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
 			for (i=xs; i<xe-2; i++) {
 				x[ (k-zs) * (IMax-1)*(JMax-1) + (j-ys) * (IMax-1) + (i-xs)] = p[k+1][j+1][i+1];
 			}
 			I = TECDAT100(&III, &x[0], &DIsDouble);
-			DAVecRestoreArray(user[bi].da, user[bi].P, &p);
+			DMDAVecRestoreArray(user[bi].da, user[bi].P, &p);
 		}
 
 
@@ -1121,13 +1121,13 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 
 		if (!onlyV && rans /*&& rans_output*/) {
 			Cmpnts2 ***komega;
-			DACreateGlobalVector(user->fda2, &K_Omega);
+			DMCreateGlobalVector(user->fda2, &K_Omega);
 			PetscViewer	viewer;
 			sprintf(filen, "kfield%06d_%1d.dat", ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, K_Omega);
-			PetscViewerDestroy(viewer);
-			DAVecGetArray(user[bi].fda2, K_Omega, &komega);
+			VecLoad(K_Omega, viewer);
+			PetscViewerDestroy(&viewer);
+			DMDAVecGetArray(user[bi].fda2, K_Omega, &komega);
 
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
@@ -1144,37 +1144,37 @@ PetscErrorCode TECIOOut_V(UserCtx *user, int only_V)	// seokkoo
 			for (i=xs; i<xe-2; i++) x[ (k-zs) * (IMax-1)*(JMax-1) + (j-ys) * (IMax-1) + (i-xs)] = komega[k+1][j+1][i+1].x/(komega[k+1][j+1][i+1].y+1.e-20);
 			I = TECDAT100(&III, &x[0], &DIsDouble);
 
-			DAVecRestoreArray(user[bi].fda2, K_Omega, &komega);
-			VecDestroy(K_Omega);
+			DMDAVecRestoreArray(user[bi].fda2, K_Omega, &komega);
+			VecDestroy(&K_Omega);
 		}
 		if (levelset) {
 			PetscReal ***level;
 			Vec Levelset;
-			DACreateGlobalVector(user->da, &Levelset);
+			DMCreateGlobalVector(user->da, &Levelset);
 			PetscViewer	viewer;
 			sprintf(filen, "lfield%06d_%1d.dat", ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, Levelset);
-			PetscViewerDestroy(viewer);
-			DAVecGetArray(user[bi].da, Levelset, &level);
+			VecLoad(Levelset, viewer);
+			PetscViewerDestroy(&viewer);
+			DMDAVecGetArray(user[bi].da, Levelset, &level);
 
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
 			for (i=xs; i<xe-2; i++) x[ (k-zs) * (IMax-1)*(JMax-1) + (j-ys) * (IMax-1) + (i-xs)] = level[k+1][j+1][i+1];
 			I = TECDAT100(&III, &x[0], &DIsDouble);
 
-			DAVecRestoreArray(user[bi].da, Levelset, &level);
-			VecDestroy(Levelset);
+			DMDAVecRestoreArray(user[bi].da, Levelset, &level);
+			VecDestroy(&Levelset);
 		}
 
 		delete []x;
 		/*
-		DAVecRestoreArray(user[bi].da, user[bi].Aj, &aj);
-		DAVecRestoreArray(user[bi].fda, user[bi].Csi, &csi);
-		DAVecRestoreArray(user[bi].fda, user[bi].Eta, &eta);
-		DAVecRestoreArray(user[bi].fda, user[bi].Zet, &zet);*/
-		DAVecRestoreArray(user[bi].fda, user[bi].Ucat, &ucat);
-		DAVecRestoreArray(user[bi].da, user[bi].Nvert, &nvert);
+		DMDAVecRestoreArray(user[bi].da, user[bi].Aj, &aj);
+		DMDAVecRestoreArray(user[bi].fda, user[bi].Csi, &csi);
+		DMDAVecRestoreArray(user[bi].fda, user[bi].Eta, &eta);
+		DMDAVecRestoreArray(user[bi].fda, user[bi].Zet, &zet);*/
+		DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat, &ucat);
+		DMDAVecRestoreArray(user[bi].da, user[bi].Nvert, &nvert);
 	}
 	I = TECEND100();
 	return 0;
@@ -1223,8 +1223,8 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 
 
 	for (bi=0; bi<block_number; bi++) {
-		DA da = user[bi].da, fda = user[bi].fda;
-		DALocalInfo info = user[bi].info;
+		DM da = user[bi].da, fda = user[bi].fda;
+		DMDALocalInfo info = user[bi].info;
 
 		PetscInt	xs = info.xs, xe = info.xs + info.xm;
 		PetscInt  	ys = info.ys, ye = info.ys + info.ym;
@@ -1270,8 +1270,8 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 		x = new float [(mx-1)*(my-1)*(mz-1)];
 		III = (mx-1) * (my-1) * (mz-1);
 
-		DAGetCoordinates(da, &Coor);
-		DAVecGetArray(fda, Coor, &coor);
+		DMGetCoordinates(da, &Coor);
+		DMDAVecGetArray(fda, Coor, &coor);
 
 		// X
 		for (k=zs; k<ze-1; k++)
@@ -1291,7 +1291,7 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 		for (i=xs; i<xe-1; i++) x[k * (mx-1)*(my-1) + j*(mx-1) + i] = coor[k][j][i].z;
 		I = TECDAT100(&III, x, &DIsDouble);
 
-		DAVecRestoreArray(fda, Coor, &coor);
+		DMDAVecRestoreArray(fda, Coor, &coor);
 
 		//delete []x;
 		double N=(double)tis+1.0;
@@ -1300,54 +1300,54 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 		III = (mx-2) * (my-2) * (mz-2);
 
 		if (pcr)  {
-			DAVecGetArray(user[bi].da, user[bi].P, &p);
+			DMDAVecGetArray(user[bi].da, user[bi].P, &p);
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
 			for (i=xs; i<xe-2; i++) x[k * (mx-2)*(my-2) + j*(mx-2) + i] = p[k+1][j+1][i+1];
 			I = TECDAT100(&III, x, &DIsDouble);
-			DAVecRestoreArray(user[bi].da, user[bi].P, &p);
+			DMDAVecRestoreArray(user[bi].da, user[bi].P, &p);
 
 			// Load ucat
 			PetscViewer	viewer;
 			sprintf(filen, "ufield%06d_%1d.dat", ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, (user[bi].Ucat));
-			PetscViewerDestroy(viewer);
+			VecLoad(user[bi].Ucat, viewer);
+			PetscViewerDestroy(&viewer);
 
-			DAVecGetArray(user[bi].fda, user[bi].Ucat, &ucat);
+			DMDAVecGetArray(user[bi].fda, user[bi].Ucat, &ucat);
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
 			for (i=xs; i<xe-2; i++) x[k * (mx-2)*(my-2) + j*(mx-2) + i]
 								= sqrt ( ucat[k+1][j+1][i+1].x*ucat[k+1][j+1][i+1].x + ucat[k+1][j+1][i+1].y*ucat[k+1][j+1][i+1].y + ucat[k+1][j+1][i+1].z*ucat[k+1][j+1][i+1].z );
 			I = TECDAT100(&III, x, &DIsDouble);
-			DAVecRestoreArray(user[bi].fda, user[bi].Ucat, &ucat);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat, &ucat);
 		}
 		else if (avg==1) {
 			PetscViewer viewer;
 			char filen[128];
 
-			DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
-			DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_cross_sum);
-			DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_cross_sum);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
 
 			sprintf(filen, "su0_%06d_%1d.dat", ti, user[bi]._this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, (user[bi].Ucat_sum));
-			PetscViewerDestroy(viewer);
+			VecLoad(user[bi].Ucat_sum, viewer);
+			PetscViewerDestroy(&viewer);
 
 			sprintf(filen, "su1_%06d_%1d.dat", ti, user[bi]._this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, (user[bi].Ucat_cross_sum));
-			PetscViewerDestroy(viewer);
+			VecLoad(user[bi].Ucat_cross_sum, viewer);
+			PetscViewerDestroy(&viewer);
 
 			sprintf(filen, "su2_%06d_%1d.dat", ti, user[bi]._this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, (user[bi].Ucat_square_sum));
-			PetscViewerDestroy(viewer);
+			VecLoad(user[bi].Ucat_square_sum, viewer);
+			PetscViewerDestroy(&viewer);
 
-			DAVecGetArray(user[bi].fda, user[bi].Ucat_sum, &usum);
-			DAVecGetArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
-			DAVecGetArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
+			DMDAVecGetArray(user[bi].fda, user[bi].Ucat_sum, &usum);
+			DMDAVecGetArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
+			DMDAVecGetArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
 
 			// U
 			for (k=zs; k<ze-2; k++)
@@ -1468,16 +1468,16 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 
 			/*******************************
 			//
-			DACreateGlobalVector(user[bi].fda, &user[bi].Csi);
-			DACreateGlobalVector(user[bi].fda, &user[bi].Eta);
-			DACreateGlobalVector(user[bi].fda, &user[bi].Zet);
-			DACreateGlobalVector(user[bi].da, &user[bi].Aj);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Csi);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Eta);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Zet);
+			DMCreateGlobalVector(user[bi].da, &user[bi].Aj);
 			FormMetrics(&(user[bi]));
 
 			Cmpnts ***csi, ***eta, ***zet;
-			DAVecGetArray(user[bi].fda, user[bi].Csi, &csi);
-			DAVecGetArray(user[bi].fda, user[bi].Eta, &eta);
-			DAVecGetArray(user[bi].fda, user[bi].Zet, &zet);
+			DMDAVecGetArray(user[bi].fda, user[bi].Csi, &csi);
+			DMDAVecGetArray(user[bi].fda, user[bi].Eta, &eta);
+			DMDAVecGetArray(user[bi].fda, user[bi].Zet, &zet);
 
 			//UV_ or UU_
 			for (k=zs; k<ze-2; k++)
@@ -1572,22 +1572,22 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 			if (ikc_average) IKavg_c(x, xs, xe, ys, ye, zs, ze, mx, my, mz);
 			I = TECDAT100(&III, x, &DIsDouble);
 
-			DAVecRestoreArray(user[bi].fda, user[bi].Csi, &csi);
-			DAVecRestoreArray(user[bi].fda, user[bi].Eta, &eta);
-			DAVecRestoreArray(user[bi].fda, user[bi].Zet, &zet);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Csi, &csi);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Eta, &eta);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Zet, &zet);
 
-			VecDestroy(user[bi].Csi);
-			VecDestroy(user[bi].Eta);
-			VecDestroy(user[bi].Zet);
-			VecDestroy(user[bi].Aj);
+			VecDestroy(&user[bi].Csi);
+			VecDestroy(&user[bi].Eta);
+			VecDestroy(&user[bi].Zet);
+			VecDestroy(&user[bi].Aj);
 
-			DAVecRestoreArray(user[bi].fda, user[bi].Ucat_sum, &usum);
-			DAVecRestoreArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
-			DAVecRestoreArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_sum, &usum);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
 
-			VecDestroy(user[bi].Ucat_sum);
-			VecDestroy(user[bi].Ucat_cross_sum);
-			VecDestroy(user[bi].Ucat_square_sum);
+			VecDestroy(&user[bi].Ucat_sum);
+			VecDestroy(&user[bi].Ucat_cross_sum);
+			VecDestroy(&user[bi].Ucat_square_sum);
 			//
 			********************************/
 
@@ -1595,21 +1595,21 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 				Vec P_sum, P_square_sum;
 				PetscReal ***psum, ***p2sum;
 
-				DACreateGlobalVector(user[bi].da, &P_sum);
-				DACreateGlobalVector(user[bi].da, &P_square_sum);
+				DMCreateGlobalVector(user[bi].da, &P_sum);
+				DMCreateGlobalVector(user[bi].da, &P_square_sum);
 
 				sprintf(filen, "sp_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, P_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(P_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "sp2_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, P_square_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(P_square_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
-				DAVecGetArray(user[bi].da, P_sum, &psum);
-				DAVecGetArray(user[bi].da, P_square_sum, &p2sum);
+				DMDAVecGetArray(user[bi].da, P_sum, &psum);
+				DMDAVecGetArray(user[bi].da, P_square_sum, &p2sum);
 
 				for (k=zs; k<ze-2; k++)
 				for (j=ys; j<ye-2; j++)
@@ -1638,32 +1638,32 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 				if (ikc_average) IKavg_c(x, xs, xe, ys, ye, zs, ze, mx, my, mz);
 				I = TECDAT100(&III, x, &DIsDouble);
 
-				DAVecRestoreArray(user[bi].da, P_sum, &psum);
-				DAVecRestoreArray(user[bi].da, P_square_sum, &p2sum);
+				DMDAVecRestoreArray(user[bi].da, P_sum, &psum);
+				DMDAVecRestoreArray(user[bi].da, P_square_sum, &p2sum);
 
-				VecDestroy(P_sum);
-				VecDestroy(P_square_sum);
+				VecDestroy(&P_sum);
+				VecDestroy(&P_square_sum);
 			}
 
 			if (averaging_option>=3) {
 				Vec Vort_sum, Vort_square_sum;
 				Cmpnts ***vortsum, ***vort2sum;
 
-				DACreateGlobalVector(user[bi].fda, &Vort_sum);
-				DACreateGlobalVector(user[bi].fda, &Vort_square_sum);
+				DMCreateGlobalVector(user[bi].fda, &Vort_sum);
+				DMCreateGlobalVector(user[bi].fda, &Vort_square_sum);
 
 				sprintf(filen, "svo_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, Vort_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(Vort_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "svo2_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, Vort_square_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(Vort_square_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
-				DAVecGetArray(user[bi].fda, Vort_sum, &vortsum);
-				DAVecGetArray(user[bi].fda, Vort_square_sum, &vort2sum);
+				DMDAVecGetArray(user[bi].fda, Vort_sum, &vortsum);
+				DMDAVecGetArray(user[bi].fda, Vort_square_sum, &vort2sum);
 
 				for (k=zs; k<ze-2; k++)
 				for (j=ys; j<ye-2; j++)
@@ -1743,11 +1743,11 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 				if (ikc_average) IKavg_c(x, xs, xe, ys, ye, zs, ze, mx, my, mz);
 				I = TECDAT100(&III, x, &DIsDouble);
 
-				DAVecRestoreArray(user[bi].fda, Vort_sum, &vortsum);
-				DAVecRestoreArray(user[bi].fda, Vort_square_sum, &vort2sum);
+				DMDAVecRestoreArray(user[bi].fda, Vort_sum, &vortsum);
+				DMDAVecRestoreArray(user[bi].fda, Vort_square_sum, &vort2sum);
 
-				VecDestroy(Vort_sum);
-				VecDestroy(Vort_square_sum);
+				VecDestroy(&Vort_sum);
+				VecDestroy(&Vort_square_sum);
 
 				//haha
 				/*
@@ -1757,82 +1757,82 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 				Cmpnts ***du2sum, ***uuusum;
 				Cmpnts ***csi, ***eta, ***zet;
 
-				DACreateGlobalVector(user[bi].da, &Udp_sum);
-				DACreateGlobalVector(user[bi].fda, &dU2_sum);
-				DACreateGlobalVector(user[bi].fda, &UUU_sum);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_cross_sum);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Csi);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Eta);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Zet);
-				DACreateGlobalVector(user[bi].da, &user[bi].Aj);
+				DMCreateGlobalVector(user[bi].da, &Udp_sum);
+				DMCreateGlobalVector(user[bi].fda, &dU2_sum);
+				DMCreateGlobalVector(user[bi].fda, &UUU_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_cross_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Csi);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Eta);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Zet);
+				DMCreateGlobalVector(user[bi].da, &user[bi].Aj);
 
 
 				sprintf(filen, "su0_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, (user[bi].Ucat_sum));
-				PetscViewerDestroy(viewer);
+				VecLoad(user[bi].Ucat_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "su1_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, (user[bi].Ucat_cross_sum));
-				PetscViewerDestroy(viewer);
+				VecLoad(user[bi].Ucat_cross_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "su2_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, (user[bi].Ucat_square_sum));
-				PetscViewerDestroy(viewer);
+				VecLoad(user[bi].Ucat_square_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "su3_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, Udp_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(Udp_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "su4_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, dU2_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(dU2_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				sprintf(filen, "su5_%06d_%1d.dat", ti, user[bi]._this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, UUU_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(UUU_sum, viewer);
+				PetscViewerDestroy(&viewer);
 
 				FormMetrics(&(user[bi]));
 
-				DAVecGetArray(user[bi].da, user[bi].Aj, &aj);
-				DAVecGetArray(user[bi].fda, user[bi].Csi, &csi);
-				DAVecGetArray(user[bi].fda, user[bi].Eta, &eta);
-				DAVecGetArray(user[bi].fda, user[bi].Zet, &zet);
-				DAVecGetArray(user[bi].fda, user[bi].Ucat_sum, &usum);
-				DAVecGetArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
-				DAVecGetArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
-				DAVecGetArray(user[bi].da, Udp_sum, &udpsum);
-				DAVecGetArray(user[bi].fda, dU2_sum, &du2sum);
-				DAVecGetArray(user[bi].fda, UUU_sum, &uuusum);
+				DMDAVecGetArray(user[bi].da, user[bi].Aj, &aj);
+				DMDAVecGetArray(user[bi].fda, user[bi].Csi, &csi);
+				DMDAVecGetArray(user[bi].fda, user[bi].Eta, &eta);
+				DMDAVecGetArray(user[bi].fda, user[bi].Zet, &zet);
+				DMDAVecGetArray(user[bi].fda, user[bi].Ucat_sum, &usum);
+				DMDAVecGetArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
+				DMDAVecGetArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
+				DMDAVecGetArray(user[bi].da, Udp_sum, &udpsum);
+				DMDAVecGetArray(user[bi].fda, dU2_sum, &du2sum);
+				DMDAVecGetArray(user[bi].fda, UUU_sum, &uuusum);
 
-				DAVecRestoreArray(user[bi].da, user[bi].Aj, &aj);
-				DAVecRestoreArray(user[bi].fda, user[bi].Csi, &csi);
-				DAVecRestoreArray(user[bi].fda, user[bi].Eta, &eta);
-				DAVecRestoreArray(user[bi].fda, user[bi].Zet, &zet);
-				DAVecRestoreArray(user[bi].fda, user[bi].Ucat_sum, &usum);
-				DAVecRestoreArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
-				DAVecRestoreArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
-				DAVecRestoreArray(user[bi].da, Udp_sum, &udpsum);
-				DAVecRestoreArray(user[bi].fda, dU2_sum, &du2sum);
-				DAVecRestoreArray(user[bi].fda, UUU_sum, &uuusum);
+				DMDAVecRestoreArray(user[bi].da, user[bi].Aj, &aj);
+				DMDAVecRestoreArray(user[bi].fda, user[bi].Csi, &csi);
+				DMDAVecRestoreArray(user[bi].fda, user[bi].Eta, &eta);
+				DMDAVecRestoreArray(user[bi].fda, user[bi].Zet, &zet);
+				DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_sum, &usum);
+				DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_cross_sum, &u1sum);
+				DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
+				DMDAVecRestoreArray(user[bi].da, Udp_sum, &udpsum);
+				DMDAVecRestoreArray(user[bi].fda, dU2_sum, &du2sum);
+				DMDAVecRestoreArray(user[bi].fda, UUU_sum, &uuusum);
 
-				VecDestroy(user[bi].Csi);
-				VecDestroy(user[bi].Eta);
-				VecDestroy(user[bi].Zet);
-				VecDestroy(user[bi].Aj);
-				VecDestroy(user[bi].Ucat_sum);
-				VecDestroy(user[bi].Ucat_cross_sum);
-				VecDestroy(user[bi].Ucat_square_sum);
-				VecDestroy(Udp_sum);
-				VecDestroy(dU2_sum);
-				VecDestroy(UUU_sum);
+				VecDestroy(&user[bi].Csi);
+				VecDestroy(&user[bi].Eta);
+				VecDestroy(&user[bi].Zet);
+				VecDestroy(&user[bi].Aj);
+				VecDestroy(&user[bi].Ucat_sum);
+				VecDestroy(&user[bi].Ucat_cross_sum);
+				VecDestroy(&user[bi].Ucat_square_sum);
+				VecDestroy(&Udp_sum);
+				VecDestroy(&dU2_sum);
+				VecDestroy(&UUU_sum);
 				*/
 			}
 		}
@@ -1842,34 +1842,34 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 			PetscReal ***ksum;
 			char filen[128];
 
-			DACreateGlobalVector(user->fda, &user->Ucat_sum);
-						            DACreateGlobalVector(user->fda, &user->Ucat_square_sum);
+			DMCreateGlobalVector(user->fda, &user->Ucat_sum);
+						            DMCreateGlobalVector(user->fda, &user->Ucat_square_sum);
 			if (rans) {
-				DACreateGlobalVector(user->da, &K_sum);
+				DMCreateGlobalVector(user->da, &K_sum);
 			}
 
 			sprintf(filen, "su0_%06d_%1d.dat", ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, (user->Ucat_sum));
-			PetscViewerDestroy(viewer);
+			VecLoad(user->Ucat_sum, viewer);
+			PetscViewerDestroy(&viewer);
 
 			if (rans) {
 				sprintf(filen, "sk_%06d_%1d.dat", ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, K_sum);
-				PetscViewerDestroy(viewer);
+				VecLoad(K_sum, viewer);
+				PetscViewerDestroy(&viewer);
 			}
 			else {
 				sprintf(filen, "su2_%06d_%1d.dat", ti, user->_this);
 				PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-				VecLoadIntoVector(viewer, (user->Ucat_square_sum));
-				PetscViewerDestroy(viewer);
+				VecLoad(user->Ucat_square_sum, viewer);
+				PetscViewerDestroy(&viewer);
 			}
 
-			DAVecGetArray(user[bi].fda, user[bi].Ucat_sum, &usum);
+			DMDAVecGetArray(user[bi].fda, user[bi].Ucat_sum, &usum);
 
-			if (rans) DAVecGetArray(user[bi].da, K_sum, &ksum);
-			else DAVecGetArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
+			if (rans) DMDAVecGetArray(user[bi].da, K_sum, &ksum);
+			else DMDAVecGetArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
 
 			// U
 			for (k=zs; k<ze-2; k++)
@@ -1926,22 +1926,22 @@ PetscErrorCode TECIOOut_Averaging(UserCtx *user)	// seokkoo
 			if (ikc_average) IKavg_c(x, xs, xe, ys, ye, zs, ze, mx, my, mz);
 			I = TECDAT100(&III, x, &DIsDouble);
 
-			DAVecRestoreArray(user[bi].fda, user[bi].Ucat_sum, &usum);
+			DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_sum, &usum);
 
-			if (rans) DAVecRestoreArray(user[bi].da, K_sum, &ksum);
-			else DAVecRestoreArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
+			if (rans) DMDAVecRestoreArray(user[bi].da, K_sum, &ksum);
+			else DMDAVecRestoreArray(user[bi].fda, user[bi].Ucat_square_sum, &u2sum);
 
-			VecDestroy(user->Ucat_sum);
-			if (rans) VecDestroy(K_sum);
-			else VecDestroy(user->Ucat_square_sum);
+			VecDestroy(&user->Ucat_sum);
+			if (rans) VecDestroy(&K_sum);
+			else VecDestroy(&user->Ucat_square_sum);
 		}
 
-		DAVecGetArray(user[bi].da, user[bi].Nvert, &nvert);
+		DMDAVecGetArray(user[bi].da, user[bi].Nvert, &nvert);
 		for (k=zs; k<ze-2; k++)
 		for (j=ys; j<ye-2; j++)
 		for (i=xs; i<xe-2; i++) x[k * (mx-2)*(my-2) + j*(mx-2) + i] = nvert[k+1][j+1][i+1];
 		I = TECDAT100(&III, x, &DIsDouble);
-		DAVecRestoreArray(user[bi].da, user[bi].Nvert, &nvert);
+		DMDAVecRestoreArray(user[bi].da, user[bi].Nvert, &nvert);
 
 		delete []x;
 	}
@@ -1985,8 +1985,8 @@ PetscErrorCode TECIOOutQ(UserCtx *user, int Q)
 	}
 
 	for (bi=0; bi<block_number; bi++) {
-		DA da = user[bi].da, fda = user[bi].fda;
-		DALocalInfo info = user[bi].info;
+		DM da = user[bi].da, fda = user[bi].fda;
+		DMDALocalInfo info = user[bi].info;
 
 		PetscInt	xs = info.xs, xe = info.xs + info.xm;
 		PetscInt  	ys = info.ys, ye = info.ys + info.ym;
@@ -2029,8 +2029,8 @@ PetscErrorCode TECIOOutQ(UserCtx *user, int Q)
 		float	*x;
 		PetscMalloc(mx*my*mz*sizeof(float), &x);	// seokkoo
 
-		DAGetCoordinates(da, &Coor);
-		DAVecGetArray(fda, Coor, &coor);
+		DMGetCoordinates(da, &Coor);
+		DMDAVecGetArray(fda, Coor, &coor);
 
 		for (k=zs; k<ze-1; k++)
 		for (j=ys; j<ye-1; j++)
@@ -2053,31 +2053,31 @@ PetscErrorCode TECIOOutQ(UserCtx *user, int Q)
 		}
 
 		I = TECDAT100(&III, x, &DIsDouble);
-		DAVecRestoreArray(fda, Coor, &coor);
+		DMDAVecRestoreArray(fda, Coor, &coor);
 
 		III = (mx-2) * (my-2) * (mz-2);
 
 		if (Q==1) {
 			QCriteria(user);
-			DAVecGetArray(user[bi].da, user[bi].P, &p);
+			DMDAVecGetArray(user[bi].da, user[bi].P, &p);
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
 			for (i=xs; i<xe-2; i++) {
 				x[k * (mx-2)*(my-2) + j*(mx-2) + i] =p[k+1][j+1][i+1];
 			}
 			I = TECDAT100(&III, x, &DIsDouble);
-			DAVecRestoreArray(user[bi].da, user[bi].P, &p);
+			DMDAVecRestoreArray(user[bi].da, user[bi].P, &p);
 		}
 		else if (Q==2) {
 			Lambda2(user);
-			DAVecGetArray(user[bi].da, user[bi].P, &p);
+			DMDAVecGetArray(user[bi].da, user[bi].P, &p);
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
 			for (i=xs; i<xe-2; i++) {
 				x[k * (mx-2)*(my-2) + j*(mx-2) + i] = p[k+1][j+1][i+1];
 			}
 			I = TECDAT100(&III, x, &DIsDouble);
-			DAVecRestoreArray(user[bi].da, user[bi].P, &p);
+			DMDAVecRestoreArray(user[bi].da, user[bi].P, &p);
 		}
 		else if (Q==3) {
 			char filen2[128];
@@ -2085,38 +2085,38 @@ PetscErrorCode TECIOOutQ(UserCtx *user, int Q)
 
 			sprintf(filen2, "qfield%06d_%1d.dat", ti, user->_this);
 			PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen2, FILE_MODE_READ, &viewer);
-			VecLoadIntoVector(viewer, (user[bi].P));
-			PetscViewerDestroy(viewer);
+			VecLoad(user[bi].P, viewer);
+			PetscViewerDestroy(&viewer);
 
-			DAVecGetArray(user[bi].da, user[bi].P, &p);
+			DMDAVecGetArray(user[bi].da, user[bi].P, &p);
 			for (k=zs; k<ze-2; k++)
 			for (j=ys; j<ye-2; j++)
 			for (i=xs; i<xe-2; i++) {
 				x[k * (mx-2)*(my-2) + j*(mx-2) + i] = p[k+1][j+1][i+1];
 			}
 			I = TECDAT100(&III, x, &DIsDouble);
-			DAVecRestoreArray(user[bi].da, user[bi].P, &p);
+			DMDAVecRestoreArray(user[bi].da, user[bi].P, &p);
 		}
 
 		Velocity_Magnitude(user);
-		DAVecGetArray(user[bi].da, user[bi].P, &p);
+		DMDAVecGetArray(user[bi].da, user[bi].P, &p);
 		for (k=zs; k<ze-2; k++)
 		for (j=ys; j<ye-2; j++)
 		for (i=xs; i<xe-2; i++) {
 			x[k * (mx-2)*(my-2) + j*(mx-2) + i] = p[k+1][j+1][i+1];
 		}
 		I = TECDAT100(&III, x, &DIsDouble);
-		DAVecRestoreArray(user[bi].da, user[bi].P, &p);
+		DMDAVecRestoreArray(user[bi].da, user[bi].P, &p);
 
 		/*
-		DAVecGetArray(user[bi].da, user[bi].Nvert, &nvert);
+		DMDAVecGetArray(user[bi].da, user[bi].Nvert, &nvert);
 		for (k=zs; k<ze-2; k++)
 		for (j=ys; j<ye-2; j++)
 		for (i=xs; i<xe-2; i++) {
 			x[k * (mx-2)*(my-2) + j*(mx-2) + i] = nvert[k+1][j+1][i+1];
 		}
 		I = TECDAT100(&III, x, &DIsDouble);
-		DAVecRestoreArray(user[bi].da, user[bi].Nvert, &nvert);
+		DMDAVecRestoreArray(user[bi].da, user[bi].Nvert, &nvert);
 		*/
 
 		PetscFree(x);
@@ -2135,13 +2135,13 @@ PetscErrorCode TECIOOutQ(UserCtx *user, int Q)
 
 PetscErrorCode FormMetrics(UserCtx *user)
 {
-	DA		cda;
+	DM		cda;
 	Cmpnts	***csi, ***eta, ***zet;
 	PetscScalar	***aj;
 	Vec		coords;
 	Cmpnts	***coor;
 
-	DA		da = user->da, fda = user->fda;
+	DM		da = user->da, fda = user->fda;
 	Vec		Csi = user->Csi, Eta = user->Eta, Zet = user->Zet;
 	Vec		Aj = user->Aj;
 	Vec		ICsi = user->ICsi, IEta = user->IEta, IZet = user->IZet;
@@ -2162,7 +2162,7 @@ PetscErrorCode FormMetrics(UserCtx *user)
 	Cmpnts	***cent, ***centx, ***centy, ***centz;
 
 	PetscInt	xs, ys, zs, xe, ye, ze;
-	DALocalInfo	info;
+	DMDALocalInfo	info;
 
 	PetscInt	mx, my, mz;
 	PetscInt	lxs, lxe, lys, lye, lzs, lze;
@@ -2173,7 +2173,7 @@ PetscErrorCode FormMetrics(UserCtx *user)
 	PetscErrorCode	ierr;
 
 	PetscReal	xcp, ycp, zcp, xcm, ycm, zcm;
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -2183,14 +2183,14 @@ PetscErrorCode FormMetrics(UserCtx *user)
 	gys = info.gys; gye = gys + info.gym;
 	gzs = info.gzs; gze = gzs + info.gzm;
 
-	DAGetCoordinateDA(da, &cda);
-	DAVecGetArray(cda, Csi, &csi);
-	DAVecGetArray(cda, Eta, &eta);
-	DAVecGetArray(cda, Zet, &zet);
-	ierr = DAVecGetArray(da, Aj,  &aj); CHKERRQ(ierr);
+	DMGetCoordinateDM(da, &cda);
+	DMDAVecGetArray(cda, Csi, &csi);
+	DMDAVecGetArray(cda, Eta, &eta);
+	DMDAVecGetArray(cda, Zet, &zet);
+	ierr = DMDAVecGetArray(da, Aj,  &aj); CHKERRQ(ierr);
 
-	DAGetGhostedCoordinates(da, &coords);
-	DAVecGetArray(fda, coords, &coor);
+	DMGetCoordinatesLocal(da, &coords);
+	DMDAVecGetArray(fda, coords, &coor);
 
 
 	//  VecDuplicate(coords, &Cent);
@@ -2450,13 +2450,13 @@ PetscErrorCode FormMetrics(UserCtx *user)
 
 
 
-	DAVecRestoreArray(cda, Csi, &csi);
-	DAVecRestoreArray(cda, Eta, &eta);
-	DAVecRestoreArray(cda, Zet, &zet);
-	DAVecRestoreArray(da, Aj,  &aj);
+	DMDAVecRestoreArray(cda, Csi, &csi);
+	DMDAVecRestoreArray(cda, Eta, &eta);
+	DMDAVecRestoreArray(cda, Zet, &zet);
+	DMDAVecRestoreArray(da, Aj,  &aj);
 
 
-	DAVecRestoreArray(cda, coords, &coor);
+	DMDAVecRestoreArray(cda, coords, &coor);
 
 
 	VecAssemblyBegin(Csi);
@@ -2468,7 +2468,7 @@ PetscErrorCode FormMetrics(UserCtx *user)
 	VecAssemblyBegin(Aj);
 	VecAssemblyEnd(Aj);
 
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 	return 0;
 }
 
@@ -2478,7 +2478,7 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 
 	char filen2[128];
 
-	PetscOptionsClearValue("-vecload_block_size");
+	PetscOptionsClearValue(NULL, "-vecload_block_size");
 	sprintf(filen2, "pfield%06d_%1d.dat", ti, user->_this);
 
 	PetscViewer	pviewer;
@@ -2488,13 +2488,13 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 
 	if (file_exist(filen2))
 	if (!onlyV) {
-		//DACreateNaturalVector(user->da, &temp);
+		//DMDACreateNaturalVector(user->da, &temp);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen2, FILE_MODE_READ, &pviewer);
-	VecLoadIntoVector(pviewer, (user->P));
+	VecLoad(user->P, pviewer);
 	VecNorm(user->P, NORM_INFINITY, &norm);
 	PetscPrintf(PETSC_COMM_WORLD, "PIn %le\n", norm);
-	PetscViewerDestroy(pviewer);
-	//VecDestroy(temp);
+	PetscViewerDestroy(&pviewer);
+	//VecDestroy(&temp);
 	}
 
 	if (nv_once) sprintf(filen2, "nvfield%06d_%1d.dat", 0, user->_this);
@@ -2504,8 +2504,8 @@ PetscErrorCode Ucont_P_Binary_Input(UserCtx *user)
 
 	if ( !nv_once || (nv_once && ti==tis) ) {
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen2, FILE_MODE_READ, &pviewer);
-	VecLoadIntoVector(pviewer, (user->Nvert));
-	PetscViewerDestroy(pviewer);
+	VecLoad(user->Nvert, pviewer);
+	PetscViewerDestroy(&pviewer);
 	}
 
 }
@@ -2522,10 +2522,10 @@ PetscErrorCode Ucont_P_Binary_Input1(UserCtx *user)
 
 	VecGetSize(user->Ucat, &N);
 	PetscPrintf(PETSC_COMM_WORLD, "PPP %d\n", N);
-	VecLoadIntoVector(viewer, (user->Ucat));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Ucat, viewer);
+	PetscViewerDestroy(&viewer);
 
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 }
 
 PetscErrorCode Ucont_P_Binary_Input_Averaging(UserCtx *user)
@@ -2535,24 +2535,24 @@ PetscErrorCode Ucont_P_Binary_Input_Averaging(UserCtx *user)
 	/*
 	sprintf(filen, "su0_%06d_%1d.dat", ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->Ucat_sum));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Ucat_sum, viewer);
+	PetscViewerDestroy(&viewer);
 
 	sprintf(filen, "su1_%06d_%1d.dat", ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->Ucat_cross_sum));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Ucat_cross_sum, viewer);
+	PetscViewerDestroy(&viewer);
 
 	sprintf(filen, "su2_%06d_%1d.dat", ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->Ucat_square_sum));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Ucat_square_sum, viewer);
+	PetscViewerDestroy(&viewer);
 	*/
 	/*
 	sprintf(filen, "sp_%06d_%1d.dat", ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->P));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->P, viewer);
+	PetscViewerDestroy(&viewer);
 	*/
 
 	if (pcr) {
@@ -2561,19 +2561,19 @@ PetscErrorCode Ucont_P_Binary_Input_Averaging(UserCtx *user)
 
 		sprintf(filen, "pfield%06d_%1d.dat", ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-		VecLoadIntoVector(viewer, user->P);
-		PetscViewerDestroy(viewer);
+		VecLoad(user->P, viewer);
+		PetscViewerDestroy(&viewer);
 
 		sprintf(filen, "sp_%06d_%1d.dat", ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-		VecLoadIntoVector(viewer, Ptmp);
-		PetscViewerDestroy(viewer);
+		VecLoad(Ptmp, viewer);
+		PetscViewerDestroy(&viewer);
 
 
 		VecScale(Ptmp, -1./((double)tis+1.0));
 		VecAXPY(user->P, 1., Ptmp);
 
-		VecDestroy(Ptmp);
+		VecDestroy(&Ptmp);
 	}
 
 	if (nv_once) sprintf(filen, "nvfield%06d_%1d.dat", 0, user->_this);
@@ -2583,18 +2583,18 @@ PetscErrorCode Ucont_P_Binary_Input_Averaging(UserCtx *user)
 
 	if ( !nv_once || (nv_once && ti==tis) ) {
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-		VecLoadIntoVector(viewer, (user->Nvert));
-		PetscViewerDestroy(viewer);
+		VecLoad(user->Nvert, viewer);
+		PetscViewerDestroy(&viewer);
 	}
 	/*
 	if ( !nv_once || (nv_once && ti==tis) ) {
 		sprintf(filen, "nvfield%06d_%1d.dat", ti, user->_this);
 		PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-		VecLoadIntoVector(viewer, (user->Nvert));
-		PetscViewerDestroy(viewer);
+		VecLoad(user->Nvert, viewer);
+		PetscViewerDestroy(&viewer);
 	}
 	*/
-	PetscBarrier(PETSC_NULL);
+	PetscBarrier(NULL);
 }
 
 #undef __FUNCT__
@@ -2602,9 +2602,9 @@ PetscErrorCode Ucont_P_Binary_Input_Averaging(UserCtx *user)
 
 int main(int argc, char **argv)
 {
-	PetscTruth flag;
+	PetscBool flag;
 
-	DA	da, fda;
+	DM	da, fda;
 	Vec	qn, qnm;
 	Vec	c;
 	UserCtx	*user;
@@ -2616,62 +2616,62 @@ int main(int argc, char **argv)
 	PetscInitialize(&argc, &argv, (char *)0, help);
 
 
-	PetscOptionsInsertFile(PETSC_COMM_WORLD, "control.dat", PETSC_TRUE);
+	PetscOptionsInsertFile(PETSC_COMM_WORLD, NULL, "control.dat", PETSC_TRUE);
 
 
 	char tmp_str[256];
-	PetscOptionsGetString(PETSC_NULL, "-prefix", tmp_str, 256, &flag);
+	PetscOptionsGetString(NULL, NULL, "-prefix", tmp_str, 256, &flag);
 	if (flag)sprintf(prefix, "%s_", tmp_str);
 	else sprintf(prefix, "");
 
-	PetscOptionsGetInt(PETSC_NULL, "-vc", &vc, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-binary", &binary_input, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-xyz", &xyz_input, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-rans", &rans, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-ransout", &rans_output, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-levelset", &levelset, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-avg", &avg, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-shear", &shear, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-averaging", &averaging_option, &flag);	// from control.dat
+	PetscOptionsGetInt(NULL, NULL, "-vc", &vc, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-binary", &binary_input, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-xyz", &xyz_input, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-rans", &rans, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-ransout", &rans_output, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-levelset", &levelset, NULL);
+	PetscOptionsGetInt(NULL, NULL, "-avg", &avg, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-shear", &shear, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-averaging", &averaging_option, &flag);	// from control.dat
 
-	PetscOptionsGetInt(PETSC_NULL, "-cs", &cs, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-i_periodic", &i_periodic, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-j_periodic", &j_periodic, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-k_periodic", &k_periodic, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-cs", &cs, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-i_periodic", &i_periodic, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-j_periodic", &j_periodic, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-k_periodic", &k_periodic, &flag);
 
-	PetscOptionsGetInt(PETSC_NULL, "-ii_periodic", &i_periodic, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-jj_periodic", &j_periodic, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-kk_periodic", &k_periodic, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-ii_periodic", &i_periodic, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-jj_periodic", &j_periodic, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-kk_periodic", &k_periodic, &flag);
 
-	PetscOptionsGetInt(PETSC_NULL, "-nv", &nv_once, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-vtk", &vtkOutput, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-nv", &nv_once, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-vtk", &vtkOutput, &flag);
 	printf("nv_once=%d\n", nv_once);
 
 	int QCR = 0;
-	PetscOptionsGetInt(PETSC_NULL, "-qcr", &QCR, PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL, "-qcr", &QCR, NULL);
 
-	PetscOptionsGetInt(PETSC_NULL, "-tis", &tis, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-tis", &tis, &flag);
 	if (!flag) PetscPrintf(PETSC_COMM_WORLD, "Need the starting number!\n");
 
-	PetscOptionsGetInt(PETSC_NULL, "-tie", &tie, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-tie", &tie, &flag);
 	if (!flag) tie = tis;
 
-	PetscOptionsGetInt(PETSC_NULL, "-ts", &tsteps, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-ts", &tsteps, &flag);
 	if (!flag) tsteps = 5; /* Default increasement is 5 */
 
-	PetscOptionsGetInt(PETSC_NULL, "-onlyV", &onlyV, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-iavg", &i_average, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-javg", &j_average, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-kavg", &k_average, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-ikavg", &ik_average, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-pcr", &pcr, &flag);
-	PetscOptionsGetInt(PETSC_NULL, "-reynolds", &reynolds, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-onlyV", &onlyV, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-iavg", &i_average, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-javg", &j_average, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-kavg", &k_average, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-ikavg", &ik_average, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-pcr", &pcr, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-reynolds", &reynolds, &flag);
 
-	PetscOptionsGetInt(PETSC_NULL, "-ikcavg", &ikc_average, &flag);
+	PetscOptionsGetInt(NULL, NULL, "-ikcavg", &ikc_average, &flag);
 	if (flag) {
-		PetscTruth flag1, flag2;
-		PetscOptionsGetInt(PETSC_NULL, "-pi", &pi, &flag1);
-		PetscOptionsGetInt(PETSC_NULL, "-pk", &pk, &flag2);
+		PetscBool flag1, flag2;
+		PetscOptionsGetInt(NULL, NULL, "-pi", &pi, &flag1);
+		PetscOptionsGetInt(NULL, NULL, "-pk", &pk, &flag2);
 
 		if (!flag1 || !flag2) {
 			printf("To use -ikcavg you must set -pi and -pk, which are number of points in i- and k- directions.\n");
@@ -2708,60 +2708,60 @@ int main(int argc, char **argv)
 	}
 
 	PetscMalloc(block_number*sizeof(UserCtx), &user);
-	PetscOptionsGetReal(PETSC_NULL, "-ren", &user->ren, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-ren", &user->ren, NULL);
 
 	ReadCoordinates(user);
 
 	PetscPrintf(PETSC_COMM_WORLD, "read coord!\n");
 
 	for (bi=0; bi<block_number; bi++) {
-		DACreateGlobalVector(user[bi].da, &user[bi].Nvert);
+		DMCreateGlobalVector(user[bi].da, &user[bi].Nvert);
 		if (shear) {
-			DACreateGlobalVector(user[bi].fda, &user[bi].Csi);
-			DACreateGlobalVector(user[bi].fda, &user[bi].Eta);
-			DACreateGlobalVector(user[bi].fda, &user[bi].Zet);
-			DACreateGlobalVector(user[bi].da, &user[bi].Aj);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Csi);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Eta);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Zet);
+			DMCreateGlobalVector(user[bi].da, &user[bi].Aj);
 			FormMetrics(&(user[bi]));
 
 			Calc_avg_shear_stress(&(user[bi]));
 
-			VecDestroy(user[bi].Csi);
-			VecDestroy(user[bi].Eta);
-			VecDestroy(user[bi].Zet);
-			VecDestroy(user[bi].Aj);
+			VecDestroy(&user[bi].Csi);
+			VecDestroy(&user[bi].Eta);
+			VecDestroy(&user[bi].Zet);
+			VecDestroy(&user[bi].Aj);
 			exit(0);
 		}
 		else if (!avg) {
-			DACreateGlobalVector(user[bi].da, &user[bi].P);
-			DACreateGlobalVector(user[bi].fda, &user[bi].Ucat);
-			if (!vc) DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_o);
+			DMCreateGlobalVector(user[bi].da, &user[bi].P);
+			DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat);
+			if (!vc) DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_o);
 
 			if (QCR)	{
 				if (QCR==1 || QCR==2) {
-					DACreateGlobalVector(user[bi].fda, &user[bi].Csi);
-					DACreateGlobalVector(user[bi].fda, &user[bi].Eta);
-					DACreateGlobalVector(user[bi].fda, &user[bi].Zet);
-					DACreateGlobalVector(user[bi].da, &user[bi].Aj);
+					DMCreateGlobalVector(user[bi].fda, &user[bi].Csi);
+					DMCreateGlobalVector(user[bi].fda, &user[bi].Eta);
+					DMCreateGlobalVector(user[bi].fda, &user[bi].Zet);
+					DMCreateGlobalVector(user[bi].da, &user[bi].Aj);
 					FormMetrics(&(user[bi]));
 				}
 			}
 		}
 		else {
 			if (pcr) {
-				DACreateGlobalVector(user[bi].da, &user[bi].P);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat);
+				DMCreateGlobalVector(user[bi].da, &user[bi].P);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat);
 			}
 			else if (avg==1) {
 				/*
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_cross_sum);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_cross_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
 				*/
 			}
 			else if (avg==2) {	// just compute k
 				/*
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
-				DACreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_sum);
+				DMCreateGlobalVector(user[bi].fda, &user[bi].Ucat_square_sum);
 				*/
 			}
 		}
@@ -2777,9 +2777,9 @@ int main(int argc, char **argv)
 		else if (ik_average) PetscPrintf(PETSC_COMM_WORLD, "Averaging in IK direction!\n");
 		else PetscPrintf(PETSC_COMM_WORLD, "Averaging !\n");
 		/*
-		DACreateGlobalVector(user[bi].fda, &user->Ucat_sum);
-		DACreateGlobalVector(user[bi].fda, &user->Ucat_cross_sum);
-		DACreateGlobalVector(user[bi].fda, &user->Ucat_square_sum);
+		DMCreateGlobalVector(user[bi].fda, &user->Ucat_sum);
+		DMCreateGlobalVector(user[bi].fda, &user->Ucat_cross_sum);
+		DMCreateGlobalVector(user[bi].fda, &user->Ucat_square_sum);
 		*/
 
 	}
@@ -2821,7 +2821,7 @@ PetscErrorCode ReadCoordinates(UserCtx *user)
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
 	PetscReal	cl = 1.;
-	PetscOptionsGetReal(PETSC_NULL, "-cl", &cl, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL, "-cl", &cl, NULL);
 
 	char str[256];
 
@@ -2870,29 +2870,29 @@ PetscErrorCode ReadCoordinates(UserCtx *user)
 		IM = user[bi].IM; JM = user[bi].JM; KM = user[bi].KM;
 
 
-		DACreate3d(PETSC_COMM_WORLD, DA_NONPERIODIC, DA_STENCIL_BOX,
+		DMDACreate3d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 			user[bi].IM+1, user[bi].JM+1, user[bi].KM+1, 1,1,
-			PETSC_DECIDE, 1, 2, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+			PETSC_DECIDE, 1, 2, NULL, NULL, NULL,
 			&(user[bi].da));
 		if (rans) {
-			DACreate3d(PETSC_COMM_WORLD, DA_NONPERIODIC, DA_STENCIL_BOX,
+			DMDACreate3d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 				user[bi].IM+1, user[bi].JM+1, user[bi].KM+1, 1,1,
-				PETSC_DECIDE, 2, 2, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+				PETSC_DECIDE, 2, 2, NULL, NULL, NULL,
 				&(user[bi].fda2));
 		}
-		DASetUniformCoordinates(user[bi].da, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-		DAGetCoordinateDA(user[bi].da, &(user[bi].fda));
+		DMDASetUniformCoordinates(user[bi].da, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+		DMGetCoordinateDM(user[bi].da, &(user[bi].fda));
 
-		DAGetLocalInfo(user[bi].da, &(user[bi].info));
+		DMDAGetLocalInfo(user[bi].da, &(user[bi].info));
 
-		DALocalInfo	info = user[bi].info;
+		DMDALocalInfo	info = user[bi].info;
 		PetscInt	xs = info.xs, xe = info.xs + info.xm;
 		PetscInt  	ys = info.ys, ye = info.ys + info.ym;
 		PetscInt	zs = info.zs, ze = info.zs + info.zm;
 		PetscInt	mx = info.mx, my = info.my, mz = info.mz;
 
-		DAGetGhostedCoordinates(user[bi].da, &Coor);
-		DAVecGetArray(user[bi].fda, Coor, &coor);
+		DMGetCoordinatesLocal(user[bi].da, &Coor);
+		DMDAVecGetArray(user[bi].fda, Coor, &coor);
 
 		double buffer;
 
@@ -2935,13 +2935,13 @@ PetscErrorCode ReadCoordinates(UserCtx *user)
 			}
 		}
 
-		DAVecRestoreArray(user[bi].fda, Coor, &coor);
+		DMDAVecRestoreArray(user[bi].fda, Coor, &coor);
 
 		Vec	gCoor;
-		DAGetCoordinates(user[bi].da, &gCoor);
-		DALocalToGlobal(user[bi].fda, Coor, INSERT_VALUES, gCoor);
-		DAGlobalToLocalBegin(user[bi].fda, gCoor, INSERT_VALUES, Coor);
-		DAGlobalToLocalEnd(user[bi].fda, gCoor, INSERT_VALUES, Coor);
+		DMGetCoordinates(user[bi].da, &gCoor);
+		DMLocalToGlobal(user[bi].fda, Coor, INSERT_VALUES, gCoor);
+		DMGlobalToLocalBegin(user[bi].fda, gCoor, INSERT_VALUES, Coor);
+		DMGlobalToLocalEnd(user[bi].fda, gCoor, INSERT_VALUES, Coor);
 
 	}
 
@@ -2958,7 +2958,7 @@ PetscErrorCode ReadCoordinates(UserCtx *user)
 void Calc_avg_shear_stress(UserCtx *user)
 {
 	double N=(double)tis+1.0;
-	DALocalInfo	info = user->info;
+	DMDALocalInfo	info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt  	ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -2982,28 +2982,28 @@ void Calc_avg_shear_stress(UserCtx *user)
 	PetscViewer	viewer;
 
 	Vec P_sum;
-	DACreateGlobalVector(user->da, &P_sum);
-	DACreateGlobalVector(user->fda, &user->Ucat_sum);
+	DMCreateGlobalVector(user->da, &P_sum);
+	DMCreateGlobalVector(user->fda, &user->Ucat_sum);
 
 	ti=tis;
 	sprintf(filen, "su0_%06d_%1d.dat", ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, (user->Ucat_sum));
-	PetscViewerDestroy(viewer);
+	VecLoad(user->Ucat_sum, viewer);
+	PetscViewerDestroy(&viewer);
 
 	ti=tis;
 	sprintf(filen, "sp_%06d_%1d.dat", ti, user->_this);
 	PetscViewerBinaryOpen(PETSC_COMM_WORLD, filen, FILE_MODE_READ, &viewer);
-	VecLoadIntoVector(viewer, P_sum);
-	PetscViewerDestroy(viewer);
+	VecLoad(P_sum, viewer);
+	PetscViewerDestroy(&viewer);
 
-	DAVecGetArray(user->fda, user->Csi, &csi);
-	DAVecGetArray(user->fda, user->Eta, &eta);
-	DAVecGetArray(user->fda, user->Zet, &zet);
-	DAVecGetArray(user->da, user->Aj, &aj);
-	DAVecGetArray(user->da, user->Nvert, &nvert);
-	DAVecGetArray(user->fda, user->Ucat_sum, &usum);
-	DAVecGetArray(user->da, P_sum, &psum);
+	DMDAVecGetArray(user->fda, user->Csi, &csi);
+	DMDAVecGetArray(user->fda, user->Eta, &eta);
+	DMDAVecGetArray(user->fda, user->Zet, &zet);
+	DMDAVecGetArray(user->da, user->Aj, &aj);
+	DMDAVecGetArray(user->da, user->Nvert, &nvert);
+	DMDAVecGetArray(user->fda, user->Ucat_sum, &usum);
+	DMDAVecGetArray(user->da, P_sum, &psum);
 
 
 	double force_skin_bottom = 0;
@@ -3104,16 +3104,16 @@ void Calc_avg_shear_stress(UserCtx *user)
 		}
 	}
 
-	DAVecRestoreArray(user->fda, user->Csi, &csi);
-	DAVecRestoreArray(user->fda, user->Eta, &eta);
-	DAVecRestoreArray(user->fda, user->Zet, &zet);
-	DAVecRestoreArray(user->da, user->Aj, &aj);
-	DAVecRestoreArray(user->da, user->Nvert, &nvert);
-	DAVecRestoreArray(user->fda, user->Ucat_sum, &usum);
-	DAVecRestoreArray(user->da, P_sum, &psum);
+	DMDAVecRestoreArray(user->fda, user->Csi, &csi);
+	DMDAVecRestoreArray(user->fda, user->Eta, &eta);
+	DMDAVecRestoreArray(user->fda, user->Zet, &zet);
+	DMDAVecRestoreArray(user->da, user->Aj, &aj);
+	DMDAVecRestoreArray(user->da, user->Nvert, &nvert);
+	DMDAVecRestoreArray(user->fda, user->Ucat_sum, &usum);
+	DMDAVecRestoreArray(user->da, P_sum, &psum);
 
-	VecDestroy(P_sum);
-	VecDestroy(user->Ucat_sum);
+	VecDestroy(&P_sum);
+	VecDestroy(&user->Ucat_sum);
 
 	printf("Top:\tarea=%f, force=%f, skin force=%f, pressure force=%f\n",
 				area_top, force_top, force_skin_top, force_pressure_top);
@@ -3134,7 +3134,7 @@ void Calc_avg_shear_stress(UserCtx *user)
 
 PetscErrorCode Lambda2(UserCtx *user)
 {
-	DALocalInfo	info = user->info;
+	DMDALocalInfo	info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt  	ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -3154,14 +3154,14 @@ PetscErrorCode Lambda2(UserCtx *user)
 	if (lzs==0) lzs++;
 	if (lze==mz) lze--;
 
-	DAVecGetArray(user->fda, user->Ucat, &ucat);
-	DAVecGetArray(user->fda, user->Csi, &csi);
-	DAVecGetArray(user->fda, user->Eta, &eta);
-	DAVecGetArray(user->fda, user->Zet, &zet);
+	DMDAVecGetArray(user->fda, user->Ucat, &ucat);
+	DMDAVecGetArray(user->fda, user->Csi, &csi);
+	DMDAVecGetArray(user->fda, user->Eta, &eta);
+	DMDAVecGetArray(user->fda, user->Zet, &zet);
 
-	DAVecGetArray(user->da, user->Aj, &aj);
-	DAVecGetArray(user->da, user->Nvert, &nvert);
-	DAVecGetArray(user->da, user->P, &q);
+	DMDAVecGetArray(user->da, user->Aj, &aj);
+	DMDAVecGetArray(user->da, user->Nvert, &nvert);
+	DMDAVecGetArray(user->da, user->P, &q);
 
 	PetscReal uc, vc, wc, ue, ve, we, uz, vz, wz;
 
@@ -3291,14 +3291,14 @@ PetscErrorCode Lambda2(UserCtx *user)
 		}
 	}
 
-	DAVecRestoreArray(user->fda, user->Ucat, &ucat);
-	DAVecRestoreArray(user->fda, user->Csi, &csi);
-	DAVecRestoreArray(user->fda, user->Eta, &eta);
-	DAVecRestoreArray(user->fda, user->Zet, &zet);
+	DMDAVecRestoreArray(user->fda, user->Ucat, &ucat);
+	DMDAVecRestoreArray(user->fda, user->Csi, &csi);
+	DMDAVecRestoreArray(user->fda, user->Eta, &eta);
+	DMDAVecRestoreArray(user->fda, user->Zet, &zet);
 
-	DAVecRestoreArray(user->da, user->Aj, &aj);
-	DAVecRestoreArray(user->da, user->Nvert, &nvert);
-	DAVecRestoreArray(user->da, user->P, &q);
+	DMDAVecRestoreArray(user->da, user->Aj, &aj);
+	DMDAVecRestoreArray(user->da, user->Nvert, &nvert);
+	DMDAVecRestoreArray(user->da, user->P, &q);
 
 	return 0;
 }
@@ -3306,7 +3306,7 @@ PetscErrorCode Lambda2(UserCtx *user)
 PetscErrorCode QCriteria(UserCtx *user)
 {
 
-	DALocalInfo	info = user->info;
+	DMDALocalInfo	info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt  	ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -3326,14 +3326,14 @@ PetscErrorCode QCriteria(UserCtx *user)
 	if (lzs==0) lzs++;
 	if (lze==mz) lze--;
 
-	DAVecGetArray(user->fda, user->Ucat, &ucat);
-	DAVecGetArray(user->fda, user->Csi, &csi);
-	DAVecGetArray(user->fda, user->Eta, &eta);
-	DAVecGetArray(user->fda, user->Zet, &zet);
+	DMDAVecGetArray(user->fda, user->Ucat, &ucat);
+	DMDAVecGetArray(user->fda, user->Csi, &csi);
+	DMDAVecGetArray(user->fda, user->Eta, &eta);
+	DMDAVecGetArray(user->fda, user->Zet, &zet);
 
-	DAVecGetArray(user->da, user->Aj, &aj);
-	DAVecGetArray(user->da, user->Nvert, &nvert);
-	DAVecGetArray(user->da, user->P, &q);
+	DMDAVecGetArray(user->da, user->Aj, &aj);
+	DMDAVecGetArray(user->da, user->Nvert, &nvert);
+	DMDAVecGetArray(user->da, user->P, &q);
 
 	PetscReal uc, vc, wc, ue, ve, we, uz, vz, wz;
 
@@ -3388,21 +3388,21 @@ PetscErrorCode QCriteria(UserCtx *user)
 		}
 	}
 
-	DAVecRestoreArray(user->fda, user->Ucat, &ucat);
-	DAVecRestoreArray(user->fda, user->Csi, &csi);
-	DAVecRestoreArray(user->fda, user->Eta, &eta);
-	DAVecRestoreArray(user->fda, user->Zet, &zet);
+	DMDAVecRestoreArray(user->fda, user->Ucat, &ucat);
+	DMDAVecRestoreArray(user->fda, user->Csi, &csi);
+	DMDAVecRestoreArray(user->fda, user->Eta, &eta);
+	DMDAVecRestoreArray(user->fda, user->Zet, &zet);
 
-	DAVecRestoreArray(user->da, user->Aj, &aj);
-	DAVecRestoreArray(user->da, user->Nvert, &nvert);
-	DAVecRestoreArray(user->da, user->P, &q);
+	DMDAVecRestoreArray(user->da, user->Aj, &aj);
+	DMDAVecRestoreArray(user->da, user->Nvert, &nvert);
+	DMDAVecRestoreArray(user->da, user->P, &q);
 
 	return 0;
 }
 
 PetscErrorCode Velocity_Magnitude(UserCtx *user)	// store at P
 {
-	DALocalInfo	info = user->info;
+	DMDALocalInfo	info = user->info;
 	PetscInt	xs = info.xs, xe = info.xs + info.xm;
 	PetscInt  	ys = info.ys, ye = info.ys + info.ym;
 	PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -3422,8 +3422,8 @@ PetscErrorCode Velocity_Magnitude(UserCtx *user)	// store at P
 	if (lzs==0) lzs++;
 	if (lze==mz) lze--;
 
-	DAVecGetArray(user->fda, user->Ucat, &ucat);
-	DAVecGetArray(user->da, user->P, &q);
+	DMDAVecGetArray(user->fda, user->Ucat, &ucat);
+	DMDAVecGetArray(user->da, user->P, &q);
 
 	PetscReal uc, vc, wc, ue, ve, we, uz, vz, wz;
 	PetscReal d11, d12, d13, d21, d22, d23, d31, d32, d33;
@@ -3436,8 +3436,8 @@ PetscErrorCode Velocity_Magnitude(UserCtx *user)	// store at P
 		}
 	}
 
-	DAVecRestoreArray(user->fda, user->Ucat, &ucat);
-	DAVecRestoreArray(user->da, user->P, &q);
+	DMDAVecRestoreArray(user->fda, user->Ucat, &ucat);
+	DMDAVecRestoreArray(user->da, user->P, &q);
 
 	return 0;
 }
@@ -3460,7 +3460,7 @@ PetscErrorCode ibm_read(IBMNodes *ibm)
 
 	if (!rank) { // root processor read in the data
 		FILE *fd;
-		fd = fopen("ibmdata0", "r"); if (!fd) SETERRQ(1, "Cannot open IBM node file")
+		fd = fopen("ibmdata0", "r"); if (!fd) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_OPEN, "Cannot open IBM node file")
 		n_v =0;
 		fscanf(fd, "%i", &n_v);
 		fscanf(fd, "%i", &n_v);
@@ -3641,7 +3641,7 @@ PetscErrorCode ibm_read_ucd(IBMNodes *ibm)
 	if (!rank) { // root processor read in the data
 		FILE *fd;
 		fd = fopen("ibmdata", "r");
-		if (!fd) SETERRQ(1, "Cannot open IBM node file")
+		if (!fd) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_FILE_OPEN, "Cannot open IBM node file")
 		n_v =0;
 
 		if (fd) {
@@ -3673,7 +3673,7 @@ PetscErrorCode ibm_read_ucd(IBMNodes *ibm)
 
 			PetscReal cl = 1.;
 
-			PetscOptionsGetReal(PETSC_NULL, "-chact_leng_valve", &cl, PETSC_NULL);
+			PetscOptionsGetReal(NULL, NULL, "-chact_leng_valve", &cl, NULL);
 
 			for (i=0; i<n_v; i++) {
 				fscanf(fd, "%i %le %le %le", &temp, &x_bp[i], &y_bp[i], &z_bp[i]);

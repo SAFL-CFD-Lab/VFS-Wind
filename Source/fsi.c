@@ -121,16 +121,16 @@ PetscErrorCode FsiInitialize(PetscInt n_elmt, FSInfo *fsi,PetscInt ibi)
   fsi->Min_xbc=-1e23;fsi->Min_ybc=-1e23;fsi->Min_zbc=-1e23;
   
 
-  PetscOptionsGetReal(PETSC_NULL, "-red_vel", &(fsi->red_vel), PETSC_NULL);
-  PetscOptionsGetReal(PETSC_NULL, "-damp", &(fsi->damp), PETSC_NULL);
-  PetscOptionsGetReal(PETSC_NULL, "-mu_s", &(fsi->mu_s), PETSC_NULL);
+  PetscOptionsGetReal(NULL, NULL, "-red_vel", &(fsi->red_vel), NULL);
+  PetscOptionsGetReal(NULL, NULL, "-damp", &(fsi->damp), NULL);
+  PetscOptionsGetReal(NULL, NULL, "-mu_s", &(fsi->mu_s), NULL);
 
-  PetscOptionsGetReal(PETSC_NULL, "-x_c", &(fsi->x_c), PETSC_NULL);
-  PetscOptionsGetReal(PETSC_NULL, "-y_c", &(fsi->y_c), PETSC_NULL);
-  PetscOptionsGetReal(PETSC_NULL, "-z_c", &(fsi->z_c), PETSC_NULL);
+  PetscOptionsGetReal(NULL, NULL, "-x_c", &(fsi->x_c), NULL);
+  PetscOptionsGetReal(NULL, NULL, "-y_c", &(fsi->y_c), NULL);
+  PetscOptionsGetReal(NULL, NULL, "-z_c", &(fsi->z_c), NULL);
 
-  PetscOptionsGetReal(PETSC_NULL, "-Max_xbc", &(fsi->Max_xbc), PETSC_NULL);
-  PetscOptionsGetReal(PETSC_NULL, "-Min_xbd", &(fsi->Min_xbc), PETSC_NULL);
+  PetscOptionsGetReal(NULL, NULL, "-Max_xbc", &(fsi->Max_xbc), NULL);
+  PetscOptionsGetReal(NULL, NULL, "-Min_xbd", &(fsi->Min_xbc), NULL);
 
 /*   Check Later!!!!!!!!!!!!!!!! */
   //fsi->y_c += 0.5;
@@ -144,8 +144,8 @@ PetscErrorCode FsiInitialize(PetscInt n_elmt, FSInfo *fsi,PetscInt ibi)
 
 PetscErrorCode SetPressure(UserCtx *user) 
 {
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt      gxs, gxe, gys, gye, gzs, gze; 
   gxs = info.gxs; gxe = gxs + info.gxm;
   gys = info.gys; gye = gys + info.gym;
@@ -155,9 +155,9 @@ PetscErrorCode SetPressure(UserCtx *user)
   Cmpnts        ***coor, ***ucat;
   PetscReal     ***p;
 
-  DAVecGetArray(fda, user->lCent,&coor);
-  DAVecGetArray(fda, user->lUcat, &ucat);
-  DAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(fda, user->lCent,&coor);
+  DMDAVecGetArray(fda, user->lUcat, &ucat);
+  DMDAVecGetArray(da, user->lP, &p);
 
   for (k=gzs; k<gze; k++) {
     for (j=gys; j<gye; j++) {
@@ -170,16 +170,16 @@ PetscErrorCode SetPressure(UserCtx *user)
     }
   }
   
-  DAVecRestoreArray(fda, user->lCent,&coor);
-  DAVecRestoreArray(fda, user->lUcat, &ucat);
-  DAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);
+  DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+  DMDAVecRestoreArray(da, user->lP, &p);
   return(0);
 }
 
 PetscErrorCode Closest_NearBndryPt_ToSurfElmt(UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmtinfo, FSInfo *fsi, PetscInt ibi)
 {
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -215,7 +215,7 @@ PetscErrorCode Closest_NearBndryPt_ToSurfElmt(UserCtx *user, IBMNodes *ibm, Surf
 /*   PetscMalloc(nbnumber*sizeof(PetscReal), &dist); */
 /*   PetscMalloc(nbnumber*sizeof(PetscReal), &distMin); */
 /*   PetscMalloc(nbnumber*sizeof(Cmpnts), &nbncoor); */
-  DAVecGetArray(fda, user->Cent,&coor);
+  DMDAVecGetArray(fda, user->Cent,&coor);
 
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -270,7 +270,7 @@ PetscErrorCode Closest_NearBndryPt_ToSurfElmt(UserCtx *user, IBMNodes *ibm, Surf
     }
   }
     
-  DAVecRestoreArray(fda, user->Cent,&coor);
+  DMDAVecRestoreArray(fda, user->Cent,&coor);
   return(0);
 }
 
@@ -305,7 +305,7 @@ PetscErrorCode distance(Cmpnts p1, Cmpnts p2, Cmpnts p3, Cmpnts p4, Cmpnts p, Pe
   return (0);
 }
 
-PetscTruth ISInsideCell(Cmpnts p, Cmpnts cell[8], PetscReal d[6])
+PetscBool ISInsideCell(Cmpnts p, Cmpnts cell[8], PetscReal d[6])
 {
   // k direction
   distance(cell[0], cell[1], cell[2], cell[3], p, &(d[4]));
@@ -331,8 +331,8 @@ PetscTruth ISInsideCell(Cmpnts p, Cmpnts cell[8], PetscReal d[6])
 
 PetscErrorCode GridCellaroundSurElmt(UserCtx *user, IBMNodes *ibm,SurfElmtInfo *elmtinfo)
 {
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -363,7 +363,7 @@ PetscErrorCode GridCellaroundSurElmt(UserCtx *user, IBMNodes *ibm,SurfElmtInfo *
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-  DAVecGetArray(fda, user->lCent,&coor);
+  DMDAVecGetArray(fda, user->lCent,&coor);
   Aroundcellnum=0;
   for (elmt=0; elmt<n_elmt; elmt++) {
   if (elmtinfo[elmt].n_P>0){ 
@@ -437,7 +437,7 @@ PetscErrorCode GridCellaroundSurElmt(UserCtx *user, IBMNodes *ibm,SurfElmtInfo *
   PetscGlobalSum(&Aroundcellnum, &AroundCellSum, PETSC_COMM_WORLD);
   PetscPrintf(PETSC_COMM_WORLD, "n_elmt & number of cells %d %le\n",n_elmt,AroundCellSum);
 
-  DAVecRestoreArray(fda, user->lCent,&coor);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);
 
   return(0);
 }
@@ -448,8 +448,8 @@ PetscErrorCode GridCellaround2ndElmt(UserCtx *user, IBMNodes *ibm,
 				     PetscInt inbn, PetscInt *kin,
 				     PetscInt *jin, PetscInt *iin)
 {
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -480,7 +480,7 @@ PetscErrorCode GridCellaround2ndElmt(UserCtx *user, IBMNodes *ibm,
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-  DAVecGetArray(fda, user->lCent,&coor);
+  DMDAVecGetArray(fda, user->lCent,&coor);
   Aroundcellnum=0;
 /*   for (elmt=0; elmt<n_elmt; elmt++) { */
 /*   if (elmtinfo[elmt].n_P>0){  */
@@ -559,7 +559,7 @@ PetscErrorCode GridCellaround2ndElmt(UserCtx *user, IBMNodes *ibm,
 /*   PetscGlobalSum(&Aroundcellnum, &AroundCellSum, PETSC_COMM_WORLD); */
 /*   PetscPrintf(PETSC_COMM_WORLD, "n_elmt & number of cells %d %le\n",n_elmt,AroundCellSum); */
 
-  DAVecRestoreArray(fda, user->lCent,&coor);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);
 
   return(0);
 }
@@ -908,8 +908,8 @@ PetscErrorCode Find_fsi_interp_Coeff(IBMInfo *ibminfo, UserCtx *user, IBMNodes *
 /* Note:  ibminfo returns the interpolation info 
    for the fsi (fsi_intp) */
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -926,8 +926,8 @@ PetscErrorCode Find_fsi_interp_Coeff(IBMInfo *ibminfo, UserCtx *user, IBMNodes *
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-  DAVecGetArray(fda, user->lCent,&coor);
-  DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lCent,&coor);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
 
   for (elmt=0; elmt<n_elmt; elmt++) {
   if (elmtinfo[elmt].n_P>0 && elmtinfo[elmt].FoundAroundcell>0) {
@@ -1142,8 +1142,8 @@ PetscErrorCode Find_fsi_interp_Coeff(IBMInfo *ibminfo, UserCtx *user, IBMNodes *
     }
   }
   }
-  DAVecRestoreArray(fda, user->lCent,&coor);  
-  DAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);  
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
   return(0);
 }
 
@@ -1495,8 +1495,8 @@ PetscErrorCode Find_fsi_interp_Coeff2(IBMInfo *ibminfo, UserCtx *user, IBMNodes 
 /* Note:  ibminfo returns the interpolation info 
    for the fsi (fsi_intp) */
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -1512,8 +1512,8 @@ PetscErrorCode Find_fsi_interp_Coeff2(IBMInfo *ibminfo, UserCtx *user, IBMNodes 
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-  DAVecGetArray(fda, user->lCent,&coor);
-  DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lCent,&coor);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
 
   for (elmt=0; elmt<n_elmt; elmt++) {
   if (elmtinfo[elmt].n_P>0 && elmtinfo[elmt].FoundAroundcell>0) {
@@ -1670,8 +1670,8 @@ PetscErrorCode Find_fsi_interp_Coeff2(IBMInfo *ibminfo, UserCtx *user, IBMNodes 
     }
   }
   }
-  DAVecRestoreArray(fda, user->lCent,&coor);  
-  DAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);  
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
   return(0);
 }
 
@@ -1823,8 +1823,8 @@ PetscErrorCode Find_fsi_2nd_interp_Coeff(PetscInt i, PetscInt j,
 /* Note:  ibminfo returns the interpolation info 
    for the fsi (fsi_intp) */
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -1842,8 +1842,8 @@ PetscErrorCode Find_fsi_2nd_interp_Coeff(PetscInt i, PetscInt j,
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-  DAVecGetArray(fda, user->lCent,&coor);
-  //DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lCent,&coor);
+  //DMDAVecGetArray(da, user->lNvert, &nvert);
 
   nfx=ibm->nf_x[elmt];
   nfy=ibm->nf_y[elmt];
@@ -1989,8 +1989,8 @@ PetscErrorCode Find_fsi_2nd_interp_Coeff(PetscInt i, PetscInt j,
     
   }
 
-  DAVecRestoreArray(fda, user->lCent,&coor);  
-  //DAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);  
+  //DMDAVecRestoreArray(da, user->lNvert, &nvert);
   return(0);
 }
 
@@ -2142,8 +2142,8 @@ PetscErrorCode Find_fsi_3rd_interp_Coeff(PetscInt i, PetscInt j,
 /* Note:  ibminfo returns the interpolation info 
    for the fsi (fsi_intp) */
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -2161,8 +2161,8 @@ PetscErrorCode Find_fsi_3rd_interp_Coeff(PetscInt i, PetscInt j,
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-  DAVecGetArray(fda, user->lCent,&coor);
-  //DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lCent,&coor);
+  //DMDAVecGetArray(da, user->lNvert, &nvert);
 
   nfx=ibm->nf_x[elmt];
   nfy=ibm->nf_y[elmt];
@@ -2284,8 +2284,8 @@ PetscErrorCode Find_fsi_3rd_interp_Coeff(PetscInt i, PetscInt j,
     
   }
 
-  DAVecRestoreArray(fda, user->lCent,&coor);  
-  //DAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);  
+  //DMDAVecRestoreArray(da, user->lNvert, &nvert);
   return(0);
 }
 
@@ -2433,8 +2433,8 @@ PetscErrorCode Find_fsi_2nd_interp_Coeff2(PetscInt i, PetscInt j,
 /* Note:  ibminfo returns the interpolation info 
    for the fsi (fsi_intp) */
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -2450,8 +2450,8 @@ PetscErrorCode Find_fsi_2nd_interp_Coeff2(PetscInt i, PetscInt j,
   PetscInt	rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-  DAVecGetArray(fda, user->lCent,&coor);
-  //DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lCent,&coor);
+  //DMDAVecGetArray(da, user->lNvert, &nvert);
 
   nfx=ibm->nf_x[elmt];
   nfy=ibm->nf_y[elmt];
@@ -2570,8 +2570,8 @@ PetscErrorCode Find_fsi_2nd_interp_Coeff2(PetscInt i, PetscInt j,
     
   } //if 
 
-  DAVecRestoreArray(fda, user->lCent,&coor);  
-  //DAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lCent,&coor);  
+  //DMDAVecRestoreArray(da, user->lNvert, &nvert);
   return(0);
 }
 
@@ -2583,14 +2583,14 @@ PetscErrorCode fsi_interpolation_coeff(UserCtx *user, IBMNodes *ibm, IBMInfo *fs
 
   Closest_NearBndryPt_ToSurfElmt(user, ibm, elmtinfo, fsi, 0);
   PetscPrintf(PETSC_COMM_WORLD, "Closest nbn\n"); 
-  //PetscBarrier(PETSC_NULL);
+  //PetscBarrier(NULL);
 
   GridCellaroundSurElmt(user, ibm, elmtinfo);
-  //PetscBarrier(PETSC_NULL);
+  //PetscBarrier(NULL);
 
   PetscPrintf(PETSC_COMM_WORLD, "Closest grid cell\n" ); 
   Find_fsi_interp_Coeff(fsi_intp, user, ibm, elmtinfo);
-  PetscBarrier(PETSC_NULL);
+  PetscBarrier(NULL);
 
   PetscPrintf(PETSC_COMM_WORLD, "fsi interp coeff\n" ); 
 
@@ -2602,8 +2602,8 @@ PetscErrorCode fsi_interpolation_coeff(UserCtx *user, IBMNodes *ibm, IBMInfo *fs
 
 PetscErrorCode Calc_fsi_surf_stress(IBMInfo *ibminfo, UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmtinfo)
 {
-  DA	        da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	        da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -2620,8 +2620,8 @@ PetscErrorCode Calc_fsi_surf_stress(IBMInfo *ibminfo, UserCtx *user, IBMNodes *i
   PetscReal     ***p;
   Cmpnts        ***ucat, uinp;
 
-  DAVecGetArray(fda, user->lUcat, &ucat);
-  DAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(fda, user->lUcat, &ucat);
+  DMDAVecGetArray(da, user->lP, &p);
 
   for (elmt=0; elmt<n_elmt; elmt++) {
     //PetscPrintf(PETSC_COMM_SELF, "n_P %d\n",ibm->n_P[elmt]);
@@ -2708,16 +2708,16 @@ PetscErrorCode Calc_fsi_surf_stress(IBMInfo *ibminfo, UserCtx *user, IBMNodes *i
     }
   }
   }
-  DAVecRestoreArray(fda, user->lUcat, &ucat);
-  DAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+  DMDAVecRestoreArray(da, user->lP, &p);
   return(0);
 
 }
 
 PetscErrorCode Calc_fsi_surf_stress2(IBMInfo *ibminfo, UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmtinfo)
 {
-  DA	        da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	        da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -2749,9 +2749,9 @@ PetscErrorCode Calc_fsi_surf_stress2(IBMInfo *ibminfo, UserCtx *user, IBMNodes *
   Cmpnts        ***ucat, uinp;
   PetscReal	***nvert;
 
-  DAVecGetArray(fda, user->lUcat, &ucat);
-  DAVecGetArray(da, user->lP, &p);
-  DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lUcat, &ucat);
+  DMDAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
 
   for (elmt=0; elmt<n_elmt; elmt++) {
     //PetscPrintf(PETSC_COMM_SELF, "n_P %d\n",ibm->n_P[elmt]);
@@ -3089,17 +3089,17 @@ PetscErrorCode Calc_fsi_surf_stress2(IBMInfo *ibminfo, UserCtx *user, IBMNodes *
       //}
   }
 
-  DAVecRestoreArray(da, user->lNvert, &nvert);
-  DAVecRestoreArray(fda, user->lUcat, &ucat);
-  DAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+  DMDAVecRestoreArray(da, user->lP, &p);
   return(0);
 
 }
 
 PetscErrorCode Calc_fsi_surf_stress_advanced(IBMInfo *ibminfo, UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmtinfo)
 {
-  DA	        da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	        da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -3131,9 +3131,9 @@ PetscErrorCode Calc_fsi_surf_stress_advanced(IBMInfo *ibminfo, UserCtx *user, IB
   PetscReal     lhs[3][3], rhs_l[3][3];
   PetscReal     dtm;
 
-  DAVecGetArray(fda, user->lUcat, &ucat);
-  DAVecGetArray(da, user->lP, &p);
-  DAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lUcat, &ucat);
+  DMDAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
 
   for (elmt=0; elmt<n_elmt; elmt++) {
     elmtinfo[elmt].P=0.;
@@ -3564,18 +3564,18 @@ PetscErrorCode Calc_fsi_surf_stress_advanced(IBMInfo *ibminfo, UserCtx *user, IB
       //}
   }
 
-  DAVecRestoreArray(da, user->lNvert, &nvert);
-  DAVecRestoreArray(fda, user->lUcat, &ucat);
-  DAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+  DMDAVecRestoreArray(da, user->lP, &p);
   return(0);
 
 }
 
 PetscErrorCode ibm_Surf_stress(UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmtinfo, PetscInt ibi)
 {
-  DA		da = user->da, fda = user->fda;
+  DM		da = user->da, fda = user->fda;
 
-  DALocalInfo	info = user->info;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -3631,8 +3631,8 @@ PetscErrorCode ibm_Surf_stress(UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmti
     }
     //nbnumber2D=0;
 
-    DAVecGetArray(fda, user->lUcat, &ucat);
-    DAVecGetArray(da, user->lP, &p);
+    DMDAVecGetArray(fda, user->lUcat, &ucat);
+    DMDAVecGetArray(da, user->lP, &p);
     
     
     current = user->ibmlist[ibi].head;
@@ -3713,7 +3713,7 @@ PetscErrorCode ibm_Surf_stress(UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmti
       
     }
 
-    PetscBarrier(PETSC_NULL);
+    PetscBarrier(NULL);
     
     for (nbn=0; nbn<n_elmt; nbn++) {
       PetscGlobalSum(&n_Pr[nbn], &n_Psum[nbn], PETSC_COMM_WORLD);
@@ -3737,7 +3737,7 @@ PetscErrorCode ibm_Surf_stress(UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmti
       }
     }
 
-    DAVecGetArray(fda, user->Cent, &coor);
+    DMDAVecGetArray(fda, user->Cent, &coor);
 
     
 /*     PetscInt  sort1[1000],sort2[1000],sort[2000],sort1no=0,sort2no=0; */
@@ -3775,7 +3775,7 @@ PetscErrorCode ibm_Surf_stress(UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmti
 /*       } */
 /*     } */
 
-/*     PetscBarrier(PETSC_NULL); */
+/*     PetscBarrier(NULL); */
 /*     //PetscPrintf(PETSC_COMM_WORLD, "%d %d  sortno\n",sort1no,sort2no); */
 
 /*     // sort the sort1 based on increasing y */
@@ -3934,9 +3934,9 @@ PetscErrorCode ibm_Surf_stress(UserCtx *user, IBMNodes *ibm, SurfElmtInfo *elmti
 /*       fclose(f); */
 /*     } */
     
-    DAVecRestoreArray(fda, user->Cent,&coor);
-    DAVecRestoreArray(fda, user->lUcat, &ucat);
-    DAVecRestoreArray(da, user->lP, &p);
+    DMDAVecRestoreArray(fda, user->Cent,&coor);
+    DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+    DMDAVecRestoreArray(da, user->lP, &p);
 
     return(0);
 }
@@ -4299,8 +4299,8 @@ PetscErrorCode Calc_Moments(FSInfo *FSinfo, IBMNodes *ibm, SurfElmtInfo *elmtinf
 PetscErrorCode Calc_forces_CVM2D(UserCtx *user, FSInfo *fsi, PetscInt ti) 
 { 
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -4356,13 +4356,13 @@ PetscErrorCode Calc_forces_CVM2D(UserCtx *user, FSInfo *fsi, PetscInt ti)
   PetscReal     nj_in,nj_out,nk_in,nk_out;
 
   // Get Working arrays
-  DAGetGhostedCoordinates(da, &Coor);
-  DAVecGetArray(fda, Coor, &coor);
+  DMGetCoordinatesLocal(da, &Coor);
+  DMDAVecGetArray(fda, Coor, &coor);
 
-  //DAVecGetArray(fda, user->lCent,&coor);
-  DAVecGetArray(fda, user->lUcat,  &ucat);
-  DAVecGetArray(fda, user->lUcont, &ucont);
-  DAVecGetArray(da, user->lP, &p);
+  //DMDAVecGetArray(fda, user->lCent,&coor);
+  DMDAVecGetArray(fda, user->lUcat,  &ucat);
+  DMDAVecGetArray(fda, user->lUcont, &ucont);
+  DMDAVecGetArray(da, user->lP, &p);
 
   // calculate normals of the CV
   i=xstart;
@@ -4575,12 +4575,12 @@ PetscErrorCode Calc_forces_CVM2D(UserCtx *user, FSInfo *fsi, PetscInt ti)
   }
 
   // Restore Working arrays
-  //DAVecRestoreArray(fda, user->lCent,&coor);
-  DAVecRestoreArray(fda, Coor, &coor);
-  DAVecRestoreArray(fda, user->lUcat,  &ucat);
-  DAVecRestoreArray(fda, user->lUcont, &ucont);
-  DAVecRestoreArray(da, user->lP, &p);
-  //VecDestroy(Coor);
+  //DMDAVecRestoreArray(fda, user->lCent,&coor);
+  DMDAVecRestoreArray(fda, Coor, &coor);
+  DMDAVecRestoreArray(fda, user->lUcat,  &ucat);
+  DMDAVecRestoreArray(fda, user->lUcont, &ucont);
+  DMDAVecRestoreArray(da, user->lP, &p);
+  //VecDestroy(&Coor);
 
   return(0);
 }
@@ -4588,8 +4588,8 @@ PetscErrorCode Calc_forces_CVM2D(UserCtx *user, FSInfo *fsi, PetscInt ti)
 PetscErrorCode Calc_forces_CVM2D_2(UserCtx *user, FSInfo *fsi, PetscInt ti) 
 { 
 
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -4680,25 +4680,25 @@ PetscErrorCode Calc_forces_CVM2D_2(UserCtx *user, FSInfo *fsi, PetscInt ti)
   PetscReal     dir=1., dir_y=1.;// depends on zet.z since U=zet.z*ucat.z
 
   // Get Working arrays
-  DAGetGhostedCoordinates(da, &Coor);
-  DAVecGetArray(fda, Coor, &coor);
+  DMGetCoordinatesLocal(da, &Coor);
+  DMDAVecGetArray(fda, Coor, &coor);
 
 
-  //DAVecGetArray(fda, user->lCent,&coor);
-  DAVecGetArray(fda, user->lUcat,  &ucat);
-  DAVecGetArray(fda, user->Ucat_o, &ucat_o);
-  DAVecGetArray(fda, user->lUcont, &ucont);
-  DAVecGetArray(da, user->lP, &p);
-  DAVecGetArray(da, user->lNvert, &nvert);
+  //DMDAVecGetArray(fda, user->lCent,&coor);
+  DMDAVecGetArray(fda, user->lUcat,  &ucat);
+  DMDAVecGetArray(fda, user->Ucat_o, &ucat_o);
+  DMDAVecGetArray(fda, user->lUcont, &ucont);
+  DMDAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
 
-  DAVecGetArray(fda, user->lICsi, &icsi);
-  DAVecGetArray(fda, user->lJEta, &jeta);
-  DAVecGetArray(fda, user->lKZet, &kzet);
-  DAVecGetArray(da, user->lIAj, &iaj);
-  DAVecGetArray(da, user->lJAj, &jaj);
-  DAVecGetArray(da, user->lKAj, &kaj);
+  DMDAVecGetArray(fda, user->lICsi, &icsi);
+  DMDAVecGetArray(fda, user->lJEta, &jeta);
+  DMDAVecGetArray(fda, user->lKZet, &kzet);
+  DMDAVecGetArray(da, user->lIAj, &iaj);
+  DMDAVecGetArray(da, user->lJAj, &jaj);
+  DMDAVecGetArray(da, user->lKAj, &kaj);
 
-/*   DAVecGetArray(fda, user->GridSpace, &gs); */
+/*   DMDAVecGetArray(fda, user->GridSpace, &gs); */
 
   // calculate normals of the CV
   i=xstart;
@@ -5104,23 +5104,23 @@ PetscErrorCode Calc_forces_CVM2D_2(UserCtx *user, FSInfo *fsi, PetscInt ti)
 
 
   // Restore Working arrays
-  //DAVecRestoreArray(fda, user->lCent,&coor);
-  DAVecRestoreArray(fda, Coor, &coor);
-  DAVecRestoreArray(fda, user->lUcat,  &ucat);
-  DAVecRestoreArray(fda, user->Ucat_o,  &ucat_o);
-  DAVecRestoreArray(fda, user->lUcont, &ucont);
-  DAVecRestoreArray(da, user->lP, &p);
-  DAVecRestoreArray(da, user->lNvert, &nvert);
+  //DMDAVecRestoreArray(fda, user->lCent,&coor);
+  DMDAVecRestoreArray(fda, Coor, &coor);
+  DMDAVecRestoreArray(fda, user->lUcat,  &ucat);
+  DMDAVecRestoreArray(fda, user->Ucat_o,  &ucat_o);
+  DMDAVecRestoreArray(fda, user->lUcont, &ucont);
+  DMDAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
-  DAVecRestoreArray(fda, user->lICsi, &icsi);
-  DAVecRestoreArray(fda, user->lJEta, &jeta);
-  DAVecRestoreArray(fda, user->lKZet, &kzet);
-  DAVecRestoreArray(da, user->lIAj, &iaj);
-  DAVecRestoreArray(da, user->lJAj, &jaj);
-  DAVecRestoreArray(da, user->lKAj, &kaj);
+  DMDAVecRestoreArray(fda, user->lICsi, &icsi);
+  DMDAVecRestoreArray(fda, user->lJEta, &jeta);
+  DMDAVecRestoreArray(fda, user->lKZet, &kzet);
+  DMDAVecRestoreArray(da, user->lIAj, &iaj);
+  DMDAVecRestoreArray(da, user->lJAj, &jaj);
+  DMDAVecRestoreArray(da, user->lKAj, &kaj);
 
-/*   DAVecRestoreArray(fda, user->GridSpace, &gs); */
-  //VecDestroy(Coor);
+/*   DMDAVecRestoreArray(fda, user->GridSpace, &gs); */
+  //VecDestroy(&Coor);
 
   return(0);
 }
@@ -5167,8 +5167,8 @@ PetscErrorCode Calc_forces_SI(FSInfo *fsi,UserCtx *user,
 			      IBMNodes *ibm,PetscInt ti, 
 			      PetscInt ibi, PetscInt bi)
 {
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -5315,19 +5315,19 @@ PetscErrorCode Calc_forces_SI(FSInfo *fsi,UserCtx *user,
 
 /* ==================================================================================             */
 /*   Get Working arrays */
-  DAGetGhostedCoordinates(da, &Coor);
-  DAVecGetArray(fda, Coor, &coor);
-  DAVecGetArray(fda, user->lCent, &cent);
-  DAVecGetArray(fda, user->lUcat, &ucat);
-  DAVecGetArray(da, user->lP, &p);
-  DAVecGetArray(da, user->lNvert, &nvert);
+  DMGetCoordinatesLocal(da, &Coor);
+  DMDAVecGetArray(fda, Coor, &coor);
+  DMDAVecGetArray(fda, user->lCent, &cent);
+  DMDAVecGetArray(fda, user->lUcat, &ucat);
+  DMDAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
 
-  DAVecGetArray(fda, user->lCsi, &csi);
-  DAVecGetArray(fda, user->lEta, &eta);
-  DAVecGetArray(fda, user->lZet, &zet);
-  DAVecGetArray(da, user->lIAj, &iaj);
-  DAVecGetArray(da, user->lJAj, &jaj);
-  DAVecGetArray(da, user->lKAj, &kaj);
+  DMDAVecGetArray(fda, user->lCsi, &csi);
+  DMDAVecGetArray(fda, user->lEta, &eta);
+  DMDAVecGetArray(fda, user->lZet, &zet);
+  DMDAVecGetArray(da, user->lIAj, &iaj);
+  DMDAVecGetArray(da, user->lJAj, &jaj);
+  DMDAVecGetArray(da, user->lKAj, &kaj);
 
 /* ==================================================================================             */
 /* Loop around all ibm nodes */
@@ -6411,20 +6411,20 @@ PetscErrorCode Calc_forces_SI(FSInfo *fsi,UserCtx *user,
 
 /* ==================================================================================             */
 /*   Restore Working arrays */
-  DAVecRestoreArray(fda, user->lCent, &cent);
-  DAVecRestoreArray(fda, Coor, &coor);
-  DAVecRestoreArray(fda, user->lUcat, &ucat);
-  DAVecRestoreArray(da, user->lP, &p);
-  DAVecRestoreArray(da, user->lNvert, &nvert);
+  DMDAVecRestoreArray(fda, user->lCent, &cent);
+  DMDAVecRestoreArray(fda, Coor, &coor);
+  DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+  DMDAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
 
-  DAVecRestoreArray(fda, user->lCsi, &csi);
-  DAVecRestoreArray(fda, user->lEta, &eta);
-  DAVecRestoreArray(fda, user->lZet, &zet);
-  DAVecRestoreArray(da, user->lIAj, &iaj);
-  DAVecRestoreArray(da, user->lJAj, &jaj);
-  DAVecRestoreArray(da, user->lKAj, &kaj);
+  DMDAVecRestoreArray(fda, user->lCsi, &csi);
+  DMDAVecRestoreArray(fda, user->lEta, &eta);
+  DMDAVecRestoreArray(fda, user->lZet, &zet);
+  DMDAVecRestoreArray(da, user->lIAj, &iaj);
+  DMDAVecRestoreArray(da, user->lJAj, &jaj);
+  DMDAVecRestoreArray(da, user->lKAj, &kaj);
 
-  VecDestroy(Coor);
+  VecDestroy(&Coor);
 
   return(0);
 }
@@ -6434,8 +6434,8 @@ PetscErrorCode Calc_forces_SI_levelset(FSInfo *fsi,UserCtx *user,
 			      IBMNodes *ibm,PetscInt ti, 
 			      PetscInt ibi, PetscInt bi)
 {
-  DA	da = user->da, fda = user->fda;
-  DALocalInfo	info = user->info;
+  DM	da = user->da, fda = user->fda;
+  DMDALocalInfo	info = user->info;
   PetscInt	xs = info.xs, xe = info.xs + info.xm;
   PetscInt  	ys = info.ys, ye = info.ys + info.ym;
   PetscInt	zs = info.zs, ze = info.zs + info.zm;
@@ -6585,25 +6585,25 @@ PetscErrorCode Calc_forces_SI_levelset(FSInfo *fsi,UserCtx *user,
 
 /* ==================================================================================             */
 /*   Get Working arrays */
-  DAGetGhostedCoordinates(da, &Coor);
-  DAVecGetArray(fda, Coor, &coor);
-  DAVecGetArray(fda, user->lCent, &cent);
-  DAVecGetArray(fda, user->lUcat, &ucat);
-	DAVecGetArray(fda, user->lUcat_old,&ucat_o);
-  DAVecGetArray(da, user->lP, &p);
-  DAVecGetArray(da, user->lNvert, &nvert);
-  DAVecGetArray(fda, user->lCsi, &csi);
-  DAVecGetArray(fda, user->lEta, &eta);
-  DAVecGetArray(fda, user->lZet, &zet);
-  DAVecGetArray(da, user->lIAj, &iaj);
-  DAVecGetArray(da, user->lJAj, &jaj);
-  DAVecGetArray(da, user->lKAj, &kaj);
-	DAVecGetArray(da, user->lAj, &aj);
+  DMGetCoordinatesLocal(da, &Coor);
+  DMDAVecGetArray(fda, Coor, &coor);
+  DMDAVecGetArray(fda, user->lCent, &cent);
+  DMDAVecGetArray(fda, user->lUcat, &ucat);
+	DMDAVecGetArray(fda, user->lUcat_old,&ucat_o);
+  DMDAVecGetArray(da, user->lP, &p);
+  DMDAVecGetArray(da, user->lNvert, &nvert);
+  DMDAVecGetArray(fda, user->lCsi, &csi);
+  DMDAVecGetArray(fda, user->lEta, &eta);
+  DMDAVecGetArray(fda, user->lZet, &zet);
+  DMDAVecGetArray(da, user->lIAj, &iaj);
+  DMDAVecGetArray(da, user->lJAj, &jaj);
+  DMDAVecGetArray(da, user->lKAj, &kaj);
+	DMDAVecGetArray(da, user->lAj, &aj);
 	PetscReal ***mu, ***rho, ***level;
 	if(levelset) {
-		DAVecGetArray(da, user->lDensity, &rho);
-		DAVecGetArray(da, user->lMu, &mu);
-		DAVecGetArray(da, user->lLevelset, &level);
+		DMDAVecGetArray(da, user->lDensity, &rho);
+		DMDAVecGetArray(da, user->lMu, &mu);
+		DMDAVecGetArray(da, user->lLevelset, &level);
 	}
 
 /* ==================================================================================             */
@@ -7269,9 +7269,9 @@ PetscErrorCode Calc_forces_SI_levelset(FSInfo *fsi,UserCtx *user,
 
 
   	if(levelset) {
-		DAVecRestoreArray(da, user->lDensity, &rho);
-		DAVecRestoreArray(da, user->lMu, &mu);
-		DAVecRestoreArray(da, user->lLevelset, &level);
+		DMDAVecRestoreArray(da, user->lDensity, &rho);
+		DMDAVecRestoreArray(da, user->lMu, &mu);
+		DMDAVecRestoreArray(da, user->lLevelset, &level);
 	}
 /* ==================================================================================             */
 /*   Total Force on each processor */
@@ -7456,20 +7456,20 @@ PetscErrorCode Calc_forces_SI_levelset(FSInfo *fsi,UserCtx *user,
 
 /* ==================================================================================             */
 /*   Restore Working arrays */
-  DAVecRestoreArray(fda, user->lCent, &cent);
-  DAVecRestoreArray(fda, Coor, &coor);
-  DAVecRestoreArray(fda, user->lUcat, &ucat);
-	DAVecRestoreArray(fda, user->lUcat_old,&ucat_o);
-  DAVecRestoreArray(da, user->lP, &p);
-  DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-  DAVecRestoreArray(fda, user->lEta, &eta);
-  DAVecRestoreArray(fda, user->lZet, &zet);
-  DAVecRestoreArray(da, user->lIAj, &iaj);
-  DAVecRestoreArray(da, user->lJAj, &jaj);
-  DAVecRestoreArray(da, user->lKAj, &kaj);
-  DAVecRestoreArray(da, user->lAj, &aj);	
-  VecDestroy(Coor);
+  DMDAVecRestoreArray(fda, user->lCent, &cent);
+  DMDAVecRestoreArray(fda, Coor, &coor);
+  DMDAVecRestoreArray(fda, user->lUcat, &ucat);
+	DMDAVecRestoreArray(fda, user->lUcat_old,&ucat_o);
+  DMDAVecRestoreArray(da, user->lP, &p);
+  DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+  DMDAVecRestoreArray(fda, user->lEta, &eta);
+  DMDAVecRestoreArray(fda, user->lZet, &zet);
+  DMDAVecRestoreArray(da, user->lIAj, &iaj);
+  DMDAVecRestoreArray(da, user->lJAj, &jaj);
+  DMDAVecRestoreArray(da, user->lKAj, &kaj);
+  DMDAVecRestoreArray(da, user->lAj, &aj);	
+  VecDestroy(&Coor);
   return(0);
 }
 

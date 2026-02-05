@@ -23,7 +23,7 @@ extern void Calculate_Covariant_metrics(double g[3][3], double G[3][3]);
 
 extern int mixed;
 extern int les, ti, tistart;
-extern PetscTruth rstart_flg;
+extern PetscBool rstart_flg;
 
 const double les_eps=1.e-4;// osl 1.e-7
 const double wall_cs=0.001;
@@ -91,8 +91,8 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 	
 	PetscReal	***nvert, ***Cs;//, ***lnu_t;
 
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -108,7 +108,7 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 
 	PetscReal	dudc, dude, dudz, dvdc, dvde, dvdz, dwdc, dwde, dwdz;
 	
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx; my = info.my; mz = info.mz;
 	xs = info.xs; xe = xs + info.xm;
 	ys = info.ys; ye = ys + info.ym;
@@ -132,39 +132,39 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 	Vec lS;
 	Vec lUcat_f;
 	
-	DAVecGetArray(fda, Ucont, &ucont);
-	DAVecGetArray(fda, Ucat,  &ucat);
-	DAVecGetArray(fda, Csi, &csi);
-	DAVecGetArray(fda, Eta, &eta);
-	DAVecGetArray(fda, Zet, &zet);
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(da, user->lAj, &aj); 
+	DMDAVecGetArray(fda, Ucont, &ucont);
+	DMDAVecGetArray(fda, Ucat,  &ucat);
+	DMDAVecGetArray(fda, Csi, &csi);
+	DMDAVecGetArray(fda, Eta, &eta);
+	DMDAVecGetArray(fda, Zet, &zet);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lAj, &aj); 
 	
-	DAVecGetArray(da, user->lCs, &Cs);
-	//DAVecGetArray(da, user->lNu_t, &lnu_t);
+	DMDAVecGetArray(da, user->lCs, &Cs);
+	//DMDAVecGetArray(da, user->lNu_t, &lnu_t);
 	
-	DAVecGetArray(fda, user->lCent, &cent);
+	DMDAVecGetArray(fda, user->lCent, &cent);
 
 	Cmpnts	***icsi, ***ieta, ***izet;
 	Cmpnts	***jcsi, ***jeta, ***jzet;
 	Cmpnts	***kcsi, ***keta, ***kzet;
 	PetscReal	***iaj, ***jaj, ***kaj;
 
-	DAVecGetArray(da, user->lIAj, &iaj);  
-	DAVecGetArray(da, user->lJAj, &jaj);  
-	DAVecGetArray(da, user->lKAj, &kaj);  
+	DMDAVecGetArray(da, user->lIAj, &iaj);  
+	DMDAVecGetArray(da, user->lJAj, &jaj);  
+	DMDAVecGetArray(da, user->lKAj, &kaj);  
 	
-	DAVecGetArray(fda, user->lICsi, &icsi);
-	DAVecGetArray(fda, user->lIEta, &ieta);
-	DAVecGetArray(fda, user->lIZet, &izet);
+	DMDAVecGetArray(fda, user->lICsi, &icsi);
+	DMDAVecGetArray(fda, user->lIEta, &ieta);
+	DMDAVecGetArray(fda, user->lIZet, &izet);
 
-	DAVecGetArray(fda, user->lJCsi, &jcsi);
-	DAVecGetArray(fda, user->lJEta, &jeta);
-	DAVecGetArray(fda, user->lJZet, &jzet);
+	DMDAVecGetArray(fda, user->lJCsi, &jcsi);
+	DMDAVecGetArray(fda, user->lJEta, &jeta);
+	DMDAVecGetArray(fda, user->lJZet, &jzet);
 
-	DAVecGetArray(fda, user->lKCsi, &kcsi);
-	DAVecGetArray(fda, user->lKEta, &keta);
-	DAVecGetArray(fda, user->lKZet, &kzet);
+	DMDAVecGetArray(fda, user->lKCsi, &kcsi);
+	DMDAVecGetArray(fda, user->lKEta, &keta);
+	DMDAVecGetArray(fda, user->lKZet, &kzet);
 	//
   
 	VecDuplicate(user->lP, &user->lLM);
@@ -186,15 +186,15 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 	VecSet(lSz, 0);	
 	VecSet(lS, 0);
 	
-	DAVecGetArray(da, user->lLM, &LM);//
-	DAVecGetArray(da, user->lMM, &MM);//
-	//DAVecGetArray(da, user->lNM, &NM);//
+	DMDAVecGetArray(da, user->lLM, &LM);//
+	DMDAVecGetArray(da, user->lMM, &MM);//
+	//DMDAVecGetArray(da, user->lNM, &NM);//
   	
-	DAVecGetArray(fda, lSx, &Ax);//
-	DAVecGetArray(fda, lSy, &Ay);//
-	DAVecGetArray(fda, lSz, &Az);//
-	DAVecGetArray(da, lS, &Sabs);//
-	DAVecGetArray(fda, lUcat_f, &ucat_f);//
+	DMDAVecGetArray(fda, lSx, &Ax);//
+	DMDAVecGetArray(fda, lSy, &Ay);//
+	DMDAVecGetArray(fda, lSz, &Az);//
+	DMDAVecGetArray(da, lS, &Sabs);//
+	DMDAVecGetArray(fda, lUcat_f, &ucat_f);//
   	
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
@@ -245,32 +245,32 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 		ucat_f[k][j][i].z = integrate_testfilter_simpson(w, weight);
 	}
 	
-	DAVecRestoreArray(fda, lSx, &Ax);//
-	DAVecRestoreArray(fda, lSy, &Ay);//
-	DAVecRestoreArray(fda, lSz, &Az);//
-	DAVecRestoreArray(da, lS, &Sabs);//
-	DAVecRestoreArray(fda, lUcat_f, &ucat_f);//
+	DMDAVecRestoreArray(fda, lSx, &Ax);//
+	DMDAVecRestoreArray(fda, lSy, &Ay);//
+	DMDAVecRestoreArray(fda, lSz, &Az);//
+	DMDAVecRestoreArray(da, lS, &Sabs);//
+	DMDAVecRestoreArray(fda, lUcat_f, &ucat_f);//
 		
-	DALocalToLocalBegin(fda, lSx, INSERT_VALUES, lSx);
-	DALocalToLocalEnd(fda, lSx, INSERT_VALUES, lSx);
+	DMLocalToLocalBegin(fda, lSx, INSERT_VALUES, lSx);
+	DMLocalToLocalEnd(fda, lSx, INSERT_VALUES, lSx);
  
-	DALocalToLocalBegin(fda, lSy, INSERT_VALUES, lSy);
-	DALocalToLocalEnd(fda, lSy, INSERT_VALUES, lSy);
+	DMLocalToLocalBegin(fda, lSy, INSERT_VALUES, lSy);
+	DMLocalToLocalEnd(fda, lSy, INSERT_VALUES, lSy);
  
-	DALocalToLocalBegin(fda, lSz, INSERT_VALUES, lSz);
-	DALocalToLocalEnd(fda, lSz, INSERT_VALUES, lSz);
+	DMLocalToLocalBegin(fda, lSz, INSERT_VALUES, lSz);
+	DMLocalToLocalEnd(fda, lSz, INSERT_VALUES, lSz);
  
-	DALocalToLocalBegin(da, lS, INSERT_VALUES, lS);
-	DALocalToLocalEnd(da, lS, INSERT_VALUES, lS);
+	DMLocalToLocalBegin(da, lS, INSERT_VALUES, lS);
+	DMLocalToLocalEnd(da, lS, INSERT_VALUES, lS);
 	
-	DALocalToLocalBegin(fda, lUcat_f, INSERT_VALUES, lUcat_f);
-	DALocalToLocalEnd(fda, lUcat_f, INSERT_VALUES, lUcat_f);
+	DMLocalToLocalBegin(fda, lUcat_f, INSERT_VALUES, lUcat_f);
+	DMLocalToLocalEnd(fda, lUcat_f, INSERT_VALUES, lUcat_f);
 	
-	DAVecGetArray(fda, lSx, &Ax);//
-	DAVecGetArray(fda, lSy, &Ay);//
-	DAVecGetArray(fda, lSz, &Az);//
-	DAVecGetArray(da, lS, &Sabs);//
-	DAVecGetArray(fda, lUcat_f, &ucat_f);//
+	DMDAVecGetArray(fda, lSx, &Ax);//
+	DMDAVecGetArray(fda, lSy, &Ay);//
+	DMDAVecGetArray(fda, lSz, &Az);//
+	DMDAVecGetArray(da, lS, &Sabs);//
+	DMDAVecGetArray(fda, lUcat_f, &ucat_f);//
 	
 	for (k=zs; k<ze; k++)
 	for (j=ys; j<ye; j++)
@@ -668,20 +668,20 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 		MM[k][j][i] = denom;
     	}
 	
-	DAVecRestoreArray(da, user->lLM, &LM);//
-	DAVecRestoreArray(da, user->lMM, &MM);//
-	//DAVecRestoreArray(da, user->lNM, &NM);//
+	DMDAVecRestoreArray(da, user->lLM, &LM);//
+	DMDAVecRestoreArray(da, user->lMM, &MM);//
+	//DMDAVecRestoreArray(da, user->lNM, &NM);//
 	
-	DALocalToLocalBegin(da, user->lLM, INSERT_VALUES, user->lLM);
-	DALocalToLocalEnd(da, user->lLM, INSERT_VALUES, user->lLM);
-	DALocalToLocalBegin(da, user->lMM, INSERT_VALUES, user->lMM);
-	DALocalToLocalEnd(da, user->lMM, INSERT_VALUES, user->lMM);
-	//DALocalToLocalBegin(da, user->lNM, INSERT_VALUES, user->lNM);
-	//DALocalToLocalEnd(da, user->lNM, INSERT_VALUES, user->lNM);
+	DMLocalToLocalBegin(da, user->lLM, INSERT_VALUES, user->lLM);
+	DMLocalToLocalEnd(da, user->lLM, INSERT_VALUES, user->lLM);
+	DMLocalToLocalBegin(da, user->lMM, INSERT_VALUES, user->lMM);
+	DMLocalToLocalEnd(da, user->lMM, INSERT_VALUES, user->lMM);
+	//DMLocalToLocalBegin(da, user->lNM, INSERT_VALUES, user->lNM);
+	//DMLocalToLocalEnd(da, user->lNM, INSERT_VALUES, user->lNM);
 	  
-	DAVecGetArray(da, user->lLM, &LM);//
-	DAVecGetArray(da, user->lMM, &MM);//
-	//DAVecGetArray(da, user->lNM, &NM);//
+	DMDAVecGetArray(da, user->lLM, &LM);//
+	DMDAVecGetArray(da, user->lMM, &MM);//
+	//DMDAVecGetArray(da, user->lNM, &NM);//
 	
 	for (k=zs; k<ze; k++)
 	for (j=ys; j<ye; j++)
@@ -979,54 +979,54 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 		}
 	}
 	
-	DAVecRestoreArray(fda, lSx, &Ax);//
-	DAVecRestoreArray(fda, lSy, &Ay);//
-	DAVecRestoreArray(fda, lSz, &Az);//
-	DAVecRestoreArray(da, lS, &Sabs);//
-	DAVecRestoreArray(fda, lUcat_f, &ucat_f);//
+	DMDAVecRestoreArray(fda, lSx, &Ax);//
+	DMDAVecRestoreArray(fda, lSy, &Ay);//
+	DMDAVecRestoreArray(fda, lSz, &Az);//
+	DMDAVecRestoreArray(da, lS, &Sabs);//
+	DMDAVecRestoreArray(fda, lUcat_f, &ucat_f);//
 	
-	DAVecRestoreArray(da, user->lLM, &LM);//
-	DAVecRestoreArray(da, user->lMM, &MM);//
+	DMDAVecRestoreArray(da, user->lLM, &LM);//
+	DMDAVecRestoreArray(da, user->lMM, &MM);//
 
-	DAVecRestoreArray(fda, Ucont, &ucont);
-	DAVecRestoreArray(fda, Ucat,  &ucat);
-	DAVecRestoreArray(fda, Csi, &csi);
-	DAVecRestoreArray(fda, Eta, &eta);
-	DAVecRestoreArray(fda, Zet, &zet);
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(da, user->lAj, &aj); 
-	DAVecRestoreArray(da, user->lCs, &Cs);
+	DMDAVecRestoreArray(fda, Ucont, &ucont);
+	DMDAVecRestoreArray(fda, Ucat,  &ucat);
+	DMDAVecRestoreArray(fda, Csi, &csi);
+	DMDAVecRestoreArray(fda, Eta, &eta);
+	DMDAVecRestoreArray(fda, Zet, &zet);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lAj, &aj); 
+	DMDAVecRestoreArray(da, user->lCs, &Cs);
 	
-	DAVecRestoreArray(fda, user->lCent, &cent);
-	VecDestroy(user->lLM);//
-	VecDestroy(user->lMM);//
+	DMDAVecRestoreArray(fda, user->lCent, &cent);
+	VecDestroy(&user->lLM);//
+	VecDestroy(&user->lMM);//
   
-	VecDestroy(lSx);//
-	VecDestroy(lSy);//
-	VecDestroy(lSz);//
-	VecDestroy(lS);//
-	VecDestroy(lUcat_f);//
+	VecDestroy(&lSx);//
+	VecDestroy(&lSy);//
+	VecDestroy(&lSz);//
+	VecDestroy(&lS);//
+	VecDestroy(&lUcat_f);//
 
-	DAVecRestoreArray(da, user->lIAj, &iaj);  
-	DAVecRestoreArray(da, user->lJAj, &jaj);  
-	DAVecRestoreArray(da, user->lKAj, &kaj);  
+	DMDAVecRestoreArray(da, user->lIAj, &iaj);  
+	DMDAVecRestoreArray(da, user->lJAj, &jaj);  
+	DMDAVecRestoreArray(da, user->lKAj, &kaj);  
 	
-	DAVecRestoreArray(fda, user->lICsi, &icsi);
-	DAVecRestoreArray(fda, user->lIEta, &ieta);
-	DAVecRestoreArray(fda, user->lIZet, &izet);
+	DMDAVecRestoreArray(fda, user->lICsi, &icsi);
+	DMDAVecRestoreArray(fda, user->lIEta, &ieta);
+	DMDAVecRestoreArray(fda, user->lIZet, &izet);
 
-	DAVecRestoreArray(fda, user->lJCsi, &jcsi);
-	DAVecRestoreArray(fda, user->lJEta, &jeta);
-	DAVecRestoreArray(fda, user->lJZet, &jzet);
+	DMDAVecRestoreArray(fda, user->lJCsi, &jcsi);
+	DMDAVecRestoreArray(fda, user->lJEta, &jeta);
+	DMDAVecRestoreArray(fda, user->lJZet, &jzet);
 
-	DAVecRestoreArray(fda, user->lKCsi, &kcsi);
-	DAVecRestoreArray(fda, user->lKEta, &keta);
-	DAVecRestoreArray(fda, user->lKZet, &kzet);
+	DMDAVecRestoreArray(fda, user->lKCsi, &kcsi);
+	DMDAVecRestoreArray(fda, user->lKEta, &keta);
+	DMDAVecRestoreArray(fda, user->lKZet, &kzet);
 	
-	DALocalToLocalBegin(da, user->lCs, INSERT_VALUES, user->lCs);
-	DALocalToLocalEnd(da, user->lCs, INSERT_VALUES, user->lCs);
+	DMLocalToLocalBegin(da, user->lCs, INSERT_VALUES, user->lCs);
+	DMLocalToLocalEnd(da, user->lCs, INSERT_VALUES, user->lCs);
 	
-	DAVecGetArray(da, user->lCs, &Cs);
+	DMDAVecGetArray(da, user->lCs, &Cs);
 	for(k=zs; k<ze; k++)
 	for(j=ys; j<ye; j++)
 	for(i=xs; i<xe; i++) {
@@ -1054,7 +1054,7 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 
 		if(flag) Cs[k][j][i] = Cs[c][b][a];
 	}
-	DAVecRestoreArray(da, user->lCs, &Cs);
+	DMDAVecRestoreArray(da, user->lCs, &Cs);
 	/*
 	if ( ! i_homo_filter && ! j_homo_filter && ! k_homo_filter && les!=3 ) {
 		Vec lCs_tmp;
@@ -1063,10 +1063,10 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 		VecDuplicate(user->lCs, &lCs_tmp);
 		VecCopy(user->lCs, lCs_tmp);
 		
-		DAVecGetArray(da, user->lAj, &aj);
-		DAVecGetArray(da, user->lNvert, &nvert);
-		DAVecGetArray(da, user->lCs, &Cs);
-		DAVecGetArray(da, lCs_tmp, &Cs_tmp);
+		DMDAVecGetArray(da, user->lAj, &aj);
+		DMDAVecGetArray(da, user->lNvert, &nvert);
+		DMDAVecGetArray(da, user->lCs, &Cs);
+		DMDAVecGetArray(da, lCs_tmp, &Cs_tmp);
 		for(k=lzs; k<lze; k++)
 		for(j=lys; j<lye; j++)
 		for(i=lxs; i<lxe; i++) {
@@ -1119,12 +1119,12 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 				Cs[k][j][i] = integrate_testfilter_simpson(C,weight);
 			}
 		}
-		DAVecRestoreArray(da, user->lAj, &aj);
-		DAVecRestoreArray(da, user->lNvert, &nvert);
-		DAVecRestoreArray(da, user->lCs, &Cs);
-		DAVecRestoreArray(da, lCs_tmp, &Cs_tmp);
+		DMDAVecRestoreArray(da, user->lAj, &aj);
+		DMDAVecRestoreArray(da, user->lNvert, &nvert);
+		DMDAVecRestoreArray(da, user->lCs, &Cs);
+		DMDAVecRestoreArray(da, lCs_tmp, &Cs_tmp);
 		
-		VecDestroy(lCs_tmp);
+		VecDestroy(&lCs_tmp);
 	}
 	*/
 	double lmax_norm=0, max_norm;
@@ -1142,8 +1142,8 @@ void Compute_Smagorinsky_Constant_1(UserCtx *user, Vec Ucont, Vec Ucat)
 
 void Compute_eddy_viscosity_LES(UserCtx *user)
 {
-	DA		da = user->da, fda = user->fda;
-	DALocalInfo	info;
+	DM		da = user->da, fda = user->fda;
+	DMDALocalInfo	info;
 	PetscInt	xs, xe, ys, ye, zs, ze; // Local grid information
 	PetscInt	mx, my, mz; // Dimensions in three directions
 	PetscInt	i, j, k;
@@ -1151,7 +1151,7 @@ void Compute_eddy_viscosity_LES(UserCtx *user)
 	PetscReal ***Cs, ***lnu_t, ***nvert, ***aj, ***ustar;
 	Cmpnts ***csi, ***eta, ***zet, ***ucat;
 	
-	DAGetLocalInfo(da, &info);
+	DMDAGetLocalInfo(da, &info);
 	mx = info.mx, my = info.my, mz = info.mz;
 	xs = info.xs, xe = xs + info.xm;
 	ys = info.ys, ye = ys + info.ym;
@@ -1171,16 +1171,16 @@ void Compute_eddy_viscosity_LES(UserCtx *user)
 
 	VecSet(user->lNu_t, 0);
 	
-	DAVecGetArray(fda, user->lUcat,  &ucat);
-	DAVecGetArray(fda, user->lCsi, &csi);
-	DAVecGetArray(fda, user->lEta, &eta);
-	DAVecGetArray(fda, user->lZet, &zet);
+	DMDAVecGetArray(fda, user->lUcat,  &ucat);
+	DMDAVecGetArray(fda, user->lCsi, &csi);
+	DMDAVecGetArray(fda, user->lEta, &eta);
+	DMDAVecGetArray(fda, user->lZet, &zet);
 	
-	DAVecGetArray(da, user->lNvert, &nvert);
-	DAVecGetArray(da, user->lAj, &aj);
-	DAVecGetArray(da, user->lNu_t, &lnu_t);
-	DAVecGetArray(da, user->lCs, &Cs);
-	DAVecGetArray(da, user->lUstar, &ustar);
+	DMDAVecGetArray(da, user->lNvert, &nvert);
+	DMDAVecGetArray(da, user->lAj, &aj);
+	DMDAVecGetArray(da, user->lNu_t, &lnu_t);
+	DMDAVecGetArray(da, user->lCs, &Cs);
+	DMDAVecGetArray(da, user->lUstar, &ustar);
 	
 	for (k=lzs; k<lze; k++)
 	for (j=lys; j<lye; j++)
@@ -1228,12 +1228,12 @@ void Compute_eddy_viscosity_LES(UserCtx *user)
 	}
 	
 	if(immersed && wallfunction==2) {
-		DAVecRestoreArray(da, user->lNu_t, &lnu_t);
+		DMDAVecRestoreArray(da, user->lNu_t, &lnu_t);
 		
-		DALocalToLocalBegin(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
-		DALocalToLocalEnd(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
+		DMLocalToLocalBegin(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
+		DMLocalToLocalEnd(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
 		
-		DAVecGetArray(da, user->lNu_t, &lnu_t);
+		DMDAVecGetArray(da, user->lNu_t, &lnu_t);
 		
 		for(int ibi=0; ibi<NumberOfBodies; ibi++)
 		{
@@ -1306,21 +1306,21 @@ void Compute_eddy_viscosity_LES(UserCtx *user)
 		}
 	}
 	
-	DAVecRestoreArray(fda, user->lUcat,  &ucat);
-	DAVecRestoreArray(fda, user->lCsi, &csi);
-	DAVecRestoreArray(fda, user->lEta, &eta);
-	DAVecRestoreArray(fda, user->lZet, &zet);
+	DMDAVecRestoreArray(fda, user->lUcat,  &ucat);
+	DMDAVecRestoreArray(fda, user->lCsi, &csi);
+	DMDAVecRestoreArray(fda, user->lEta, &eta);
+	DMDAVecRestoreArray(fda, user->lZet, &zet);
 	
-	DAVecRestoreArray(da, user->lNvert, &nvert);
-	DAVecRestoreArray(da, user->lAj, &aj);
-	DAVecRestoreArray(da, user->lNu_t, &lnu_t);
-	DAVecRestoreArray(da, user->lCs, &Cs);
-	DAVecRestoreArray(da, user->lUstar, &ustar);
+	DMDAVecRestoreArray(da, user->lNvert, &nvert);
+	DMDAVecRestoreArray(da, user->lAj, &aj);
+	DMDAVecRestoreArray(da, user->lNu_t, &lnu_t);
+	DMDAVecRestoreArray(da, user->lCs, &Cs);
+	DMDAVecRestoreArray(da, user->lUstar, &ustar);
 	
-	DALocalToLocalBegin(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
-	DALocalToLocalEnd(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
+	DMLocalToLocalBegin(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
+	DMLocalToLocalEnd(da, user->lNu_t, INSERT_VALUES, user->lNu_t);
 	
-	DAVecGetArray(da, user->lNu_t, &lnu_t);
+	DMDAVecGetArray(da, user->lNu_t, &lnu_t);
 	for(k=zs; k<ze; k++)
 	for(j=ys; j<ye; j++)
 	for(i=xs; i<xe; i++) {
@@ -1350,7 +1350,7 @@ void Compute_eddy_viscosity_LES(UserCtx *user)
 			lnu_t[k][j][i] = lnu_t[c][b][a];
 		}
 	}
-	DAVecRestoreArray(da, user->lNu_t, &lnu_t);
+	DMDAVecRestoreArray(da, user->lNu_t, &lnu_t);
 	
 	double lmax_norm=0, max_norm;
 	int p;
